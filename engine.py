@@ -55,7 +55,7 @@ def minutes_to_str(minutes):
 
 
 class Kuliah:
-    def __init__(self, code, nama, ruangan, jam_mulai, jam_selesai):
+    def __init__(self, code, nama, ruangan, jam_mulai, jam_selesai, hari="Senin"):
         """
         Konstruktor kelas Kuliah.
         
@@ -65,12 +65,14 @@ class Kuliah:
             ruangan (str): Nama ruangan kampus
             jam_mulai (str): Waktu mulai kelas format 'HH:MM'
             jam_selesai (str): Waktu selesai kelas format 'HH:MM'
+            hari (str): Hari pelaksanaan kelas (default: 'Senin')
         """
         self.code = code
         self.nama = nama
         self.ruangan = ruangan
         self.jam_mulai = jam_mulai
         self.jam_selesai = jam_selesai
+        self.hari = hari
         
         # Konversi waktu ke bentuk menit untuk memudahkan komparasi matematis
         self.mulai_menit = parse_time(jam_mulai)
@@ -84,42 +86,43 @@ class Kuliah:
             'ruangan': self.ruangan,
             'jam_mulai': self.jam_mulai,
             'jam_selesai': self.jam_selesai,
+            'hari': self.hari,
             'mulai_menit': self.mulai_menit,
             'selesai_menit': self.selesai_menit
         }
 
     def __repr__(self):
-        return f"Kuliah({self.code}, {self.nama}, {self.ruangan}, {self.jam_mulai}-{self.jam_selesai})"
+        return f"Kuliah({self.code}, {self.nama}, {self.ruangan}, {self.hari} {self.jam_mulai}-{self.jam_selesai})"
 
 
 def get_dummy_data():
     """
     Menyediakan minimal 10 data dummy perkuliahan untuk pengujian awal.
-    Terdapat beberapa data yang saling bentrok pada ruangan yang sama.
+    Terdapat beberapa data yang saling bentrok pada ruangan dan hari yang sama.
     
     Returns:
         list: Daftar objek Kuliah
     """
     dummy_configs = [
-        # Ruang AULA (Kapasitas besar, banyak bentrok)
-        ('C01', 'Perancangan & Analisis Algoritma', 'AULA', '07:00', '09:00'),
-        ('C02', 'Aljabar Linear', 'AULA', '08:00', '10:00'),  # Bentrok dengan C01
-        ('C03', 'Struktur Data', 'AULA', '09:00', '11:00'),   # Mulai tepat saat C01 selesai
-        ('C04', 'Pemrograman Web', 'AULA', '10:30', '12:30'), # Bentrok dengan C03
-        ('C05', 'Kecerdasan Buatan', 'AULA', '11:00', '13:00'),# Mulai tepat saat C03 selesai
-
-        # Ruang LAB-01
-        ('C06', 'Basis Data', 'LAB-01', '07:30', '09:30'),
-        ('C07', 'Keamanan Informasi', 'LAB-01', '09:00', '10:30'), # Bentrok dengan C06 & C08
-        ('C08', 'Jaringan Komputer', 'LAB-01', '09:40', '11:40'),  # Mulai setelah C06 selesai
-        ('C09', 'Interaksi Manusia Komputer', 'LAB-01', '11:00', '13:00'), # Bentrok dengan C08 & C10
-        ('C10', 'Grafika Komputer', 'LAB-01', '12:00', '14:00'),   # Mulai setelah C08 selesai
-
-        # Ruang 301 (Kelas Teori)
-        ('C11', 'Sistem Operasi', 'Ruang 301', '08:00', '10:00'),
-        ('C12', 'Metode Numerik', 'Ruang 301', '09:30', '11:30'),   # Bentrok dengan C11
-        ('C13', 'Bahasa Indonesia', 'Ruang 301', '10:00', '11:30'), # Mulai tepat saat C11 selesai
-        ('C14', 'Fisika Dasar', 'Ruang 301', '11:30', '13:00'),      # Mulai setelah C13 selesai
+        # Ruang AULA (Tersebar di Senin dan Selasa)
+        ('C01', 'Perancangan & Analisis Algoritma', 'AULA', '07:00', '09:00', 'Senin'),
+        ('C02', 'Aljabar Linear', 'AULA', '08:00', '10:00', 'Senin'),  # Bentrok dengan C01 di Senin
+        ('C03', 'Struktur Data', 'AULA', '09:00', '11:00', 'Senin'),   # Mulai tepat saat C01 selesai di Senin
+        ('C04', 'Pemrograman Web', 'AULA', '10:30', '12:30', 'Selasa'),
+        ('C05', 'Kecerdasan Buatan', 'AULA', '11:00', '13:00', 'Selasa'),# Bentrok dengan C04 di Selasa
+ 
+        # Ruang LAB-01 (Tersebar di Rabu dan Kamis)
+        ('C06', 'Basis Data', 'LAB-01', '07:30', '09:30', 'Rabu'),
+        ('C07', 'Keamanan Informasi', 'LAB-01', '09:00', '10:30', 'Rabu'), # Bentrok dengan C06 di Rabu
+        ('C08', 'Jaringan Komputer', 'LAB-01', '09:40', '11:40', 'Rabu'),  # Mulai setelah C06 selesai di Rabu
+        ('C09', 'Interaksi Manusia Komputer', 'LAB-01', '11:00', '13:00', 'Kamis'),
+        ('C10', 'Grafika Komputer', 'LAB-01', '12:00', '14:00', 'Kamis'),   # Bentrok dengan C09 di Kamis
+ 
+        # Ruang 301 (Tersebar di Jumat)
+        ('C11', 'Sistem Operasi', 'Ruang 301', '08:00', '10:00', 'Jumat'),
+        ('C12', 'Metode Numerik', 'Ruang 301', '09:30', '11:30', 'Jumat'),   # Bentrok dengan C11 di Jumat
+        ('C13', 'Bahasa Indonesia', 'Ruang 301', '10:00', '11:30', 'Jumat'), # Mulai tepat saat C11 selesai di Jumat
+        ('C14', 'Fisika Dasar', 'Ruang 301', '11:30', '13:00', 'Jumat'),      # Mulai setelah C13 selesai di Jumat
     ]
     return [Kuliah(*config) for config in dummy_configs]
 
@@ -130,15 +133,15 @@ def greedy_schedule(classes):
     Strategi: Activity Selection Problem
     
     Alur Kerja Greedy:
-    1. Kelompokkan seluruh kelas berdasarkan nama ruangan (karena optimasi dilakukan per ruangan).
-    2. Untuk setiap ruangan:
+    1. Kelompokkan seluruh kelas berdasarkan pasangan (ruangan, hari) (karena optimasi dilakukan per ruangan per hari).
+    2. Untuk setiap kombinasi (ruangan, hari):
        - Urutkan kelas berdasarkan waktu selesai (selesai_menit) terkecil ke terbesar.
          Hal ini memastikan bahwa ruangan dibebaskan secepat mungkin untuk kelas berikutnya.
        - Ambil kelas pertama yang selesai paling cepat. Kelas ini otomatis DITERIMA.
        - Untuk setiap kelas berikutnya dalam antrean terurut:
          - Periksa apakah waktu mulai kelas >= waktu selesai kelas terakhir yang diterima.
          - Jika ya, kelas DITERIMA, dan perbarui referensi kelas terakhir yang diterima.
-         - Jika tidak, kelas dinyatakan BENTROK dan ditolak dari ruangan tersebut.
+         - Jika tidak, kelas dinyatakan BENTROK dan ditolak dari ruangan tersebut pada hari itu.
          
     Args:
         classes (list): Daftar seluruh objek Kuliah yang diajukan.
@@ -151,30 +154,28 @@ def greedy_schedule(classes):
     if not classes:
         return [], []
 
-    # 1. Kelompokkan kelas berdasarkan ruangan
-    # Menggunakan dictionary untuk pemetaan: ruangan -> daftar kelas
-    rooms_schedule = {}
+    # 1. Kelompokkan kelas berdasarkan (ruangan, hari)
+    rooms_days_schedule = {}
     for c in classes:
-        if c.ruangan not in rooms_schedule:
-            rooms_schedule[c.ruangan] = []
-        rooms_schedule[c.ruangan].append(c)
+        key = (c.ruangan, c.hari)
+        if key not in rooms_days_schedule:
+            rooms_days_schedule[key] = []
+        rooms_days_schedule[key].append(c)
 
     accepted_classes = []
     conflicted_classes = []
 
-    # 2. Proses optimasi Greedy untuk setiap ruangan
-    for room, room_classes in rooms_schedule.items():
+    # 2. Proses optimasi Greedy untuk setiap (ruangan, hari)
+    for (room, day), group_classes in rooms_days_schedule.items():
         # Langkah A: Urutkan kelas berdasarkan waktu selesai paling cepat (selesai_menit)
-        # Kompleksitas: O(k log k) di mana k adalah jumlah kelas di ruangan ini.
         # Jika waktu selesai sama, urutkan berdasarkan waktu mulai (mulai_menit) secara ascending.
-        sorted_classes = sorted(room_classes, key=lambda x: (x.selesai_menit, x.mulai_menit))
+        sorted_classes = sorted(group_classes, key=lambda x: (x.selesai_menit, x.mulai_menit))
 
         # Langkah B: Pilih kelas pertama (Greedy Choice)
         last_accepted = sorted_classes[0]
         accepted_classes.append(last_accepted)
 
         # Langkah C: Seleksi linear sisa kelas
-        # Kompleksitas: O(k) untuk pemindaian linear
         for i in range(1, len(sorted_classes)):
             current_class = sorted_classes[i]
             # Mengecek kondisi tidak tumpang tindih (non-overlap)
@@ -185,9 +186,10 @@ def greedy_schedule(classes):
                 conflicted_classes.append(current_class)
 
     # Kembalikan daftar yang sudah disortir agar rapi secara visual saat ditampilkan
-    # Diurutkan berdasarkan Ruangan -> Jam Mulai
-    accepted_classes.sort(key=lambda x: (x.ruangan, x.mulai_menit))
-    conflicted_classes.sort(key=lambda x: (x.ruangan, x.mulai_menit))
+    # Diurutkan berdasarkan: Hari -> Ruangan -> Jam Mulai
+    day_order = {'Senin': 0, 'Selasa': 1, 'Rabu': 2, 'Kamis': 3, 'Jumat': 4, 'Sabtu': 5, 'Minggu': 6}
+    accepted_classes.sort(key=lambda x: (day_order.get(x.hari, 7), x.ruangan, x.mulai_menit))
+    conflicted_classes.sort(key=lambda x: (day_order.get(x.hari, 7), x.ruangan, x.mulai_menit))
 
     return accepted_classes, conflicted_classes
 
@@ -248,9 +250,10 @@ def export_schedule_to_file(filepath, classes, accepted, conflicted):
 def get_schedule_suggestions(target_class, all_classes, accepted_classes):
     """
     Mencari saran jadwal alternatif untuk sebuah kelas yang bentrok.
-    Mengembalikan dua jenis saran:
-      1. Alternatif Ruangan: Ruangan lain di mana slot waktu yang SAMA tersedia.
-      2. Alternatif Waktu: Slot waktu kosong di ruangan yang SAMA.
+    Mengembalikan tiga jenis saran:
+      1. Alternatif Ruangan: Ruangan lain di mana slot waktu dan hari yang SAMA tersedia.
+      2. Alternatif Waktu: Slot waktu kosong di hari dan ruangan yang SAMA.
+      3. Alternatif Hari: Hari lain di mana slot waktu dan ruangan yang SAMA tersedia.
 
     Args:
         target_class: Objek Kuliah yang bentrok.
@@ -260,52 +263,49 @@ def get_schedule_suggestions(target_class, all_classes, accepted_classes):
     Returns:
         dict: {
             'alt_rooms': list[str]  -> saran ruangan alternatif,
-            'alt_times': list[str]  -> saran slot waktu alternatif di ruangan yang sama
+            'alt_times': list[str]  -> saran slot waktu alternatif,
+            'alt_days': list[str]   -> saran hari alternatif
         }
     """
     durasi = target_class.selesai_menit - target_class.mulai_menit
 
-    # --- Kelompokkan kelas yang DITERIMA berdasarkan ruangan ---
-    accepted_by_room = {}
+    # --- Kelompokkan kelas yang DITERIMA berdasarkan (hari, ruangan) ---
+    accepted_by_day_room = {}
     for c in accepted_classes:
-        if c.ruangan not in accepted_by_room:
-            accepted_by_room[c.ruangan] = []
-        accepted_by_room[c.ruangan].append(c)
+        key = (c.hari, c.ruangan)
+        if key not in accepted_by_day_room:
+            accepted_by_day_room[key] = []
+        accepted_by_day_room[key].append(c)
 
     # Ambil semua nama ruangan unik dari seluruh pengajuan
     all_rooms = sorted(set(c.ruangan for c in all_classes))
+    work_days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
 
     # ----------------------------------------------------------------
-    # Saran 1: Ruangan Alternatif (waktu yang sama, ruangan berbeda)
-    # Periksa apakah slot [mulai, selesai] target_class kosong di ruangan lain
+    # Saran 1: Ruangan Alternatif (Hari & Jam yang sama, Ruangan berbeda)
     # ----------------------------------------------------------------
     alt_rooms = []
     for room in all_rooms:
         if room == target_class.ruangan:
             continue  # Skip ruangan asal
 
-        occupied = accepted_by_room.get(room, [])
-        # Cek apakah kelas target bisa masuk ke ruangan ini tanpa bentrok
+        occupied = accepted_by_day_room.get((target_class.hari, room), [])
         can_fit = True
         for c in occupied:
-            # Overlap jika: mulai target < selesai c AND selesai target > mulai c
             if target_class.mulai_menit < c.selesai_menit and target_class.selesai_menit > c.mulai_menit:
                 can_fit = False
                 break
         if can_fit:
             alt_rooms.append(
-                f"Ruang '{room}' pada {target_class.jam_mulai}-{target_class.jam_selesai} (kosong)"
+                f"Ruang '{room}' ({target_class.jam_mulai}-{target_class.jam_selesai})"
             )
 
     # ----------------------------------------------------------------
-    # Saran 2: Waktu Alternatif (ruangan yang sama, waktu berbeda)
-    # Cari slot kosong di ruangan asal dengan durasi yang cukup.
-    # Kandidat slot: setelah setiap kelas yang diterima di ruangan itu,
-    # dan sebelum kelas pertama jika ada ruang di sana.
+    # Saran 2: Waktu Alternatif (Hari & Ruangan yang sama, Waktu berbeda)
     # ----------------------------------------------------------------
     alt_times = []
-    same_room_accepted = sorted(
-        accepted_by_room.get(target_class.ruangan, []),
+    same_day_room_accepted = sorted(
+        accepted_by_day_room.get((target_class.hari, target_class.ruangan), []),
         key=lambda x: x.mulai_menit
     )
 
@@ -313,11 +313,9 @@ def get_schedule_suggestions(target_class, all_classes, accepted_classes):
     ops_start = 7 * 60   # 420 menit
     ops_end   = 20 * 60  # 1200 menit
 
-    # Kumpulkan batas-batas slot yang sudah terpakai → [(mulai, selesai), ...]
-    occupied_slots = [(c.mulai_menit, c.selesai_menit) for c in same_room_accepted]
+    occupied_slots = [(c.mulai_menit, c.selesai_menit) for c in same_day_room_accepted]
     occupied_slots.sort()
 
-    # Bangun daftar "gap" kosong dalam jam operasional
     gaps = []
     prev_end = ops_start
     for (s, e) in occupied_slots:
@@ -327,17 +325,32 @@ def get_schedule_suggestions(target_class, all_classes, accepted_classes):
     if prev_end < ops_end:
         gaps.append((prev_end, ops_end))
 
-    # Cari gap yang cukup untuk menampung kelas dengan durasi yang dibutuhkan
     MAX_SUGGESTIONS = 3
     for (gap_start, gap_end) in gaps:
         if gap_end - gap_start >= durasi:
             slot_mulai = gap_start
             slot_selesai = gap_start + durasi
             alt_times.append(
-                f"Ruang '{target_class.ruangan}' pukul "
-                f"{minutes_to_str(slot_mulai)}-{minutes_to_str(slot_selesai)} (slot tersedia)"
+                f"{minutes_to_str(slot_mulai)}-{minutes_to_str(slot_selesai)}"
             )
             if len(alt_times) >= MAX_SUGGESTIONS:
                 break
 
-    return {'alt_rooms': alt_rooms, 'alt_times': alt_times}
+    # ----------------------------------------------------------------
+    # Saran 3: Hari Alternatif (Ruangan & Jam yang sama, Hari berbeda)
+    # ----------------------------------------------------------------
+    alt_days = []
+    for day in work_days:
+        if day == target_class.hari:
+            continue
+
+        occupied = accepted_by_day_room.get((day, target_class.ruangan), [])
+        can_fit = True
+        for c in occupied:
+            if target_class.mulai_menit < c.selesai_menit and target_class.selesai_menit > c.mulai_menit:
+                can_fit = False
+                break
+        if can_fit:
+            alt_days.append(day)
+
+    return {'alt_rooms': alt_rooms, 'alt_times': alt_times, 'alt_days': alt_days}
