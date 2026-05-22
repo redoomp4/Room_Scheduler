@@ -9,9 +9,9 @@ Proyek ini adalah implementasi lengkap solusi optimasi penjadwalan ruangan mengg
 Proyek ini terbagi menjadi 5 file utama:
 
 1. 📂 **[main.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/main.py)**: Berperan sebagai pintu masuk program. Menyediakan menu pembuka untuk memilih antarmuka CLI atau GUI.
-2. ⚙️ **[engine.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/engine.py)**: Berisi representasi objek data kelas (`Kuliah`), data dummy, logika utama **Algoritma Greedy**, dan utilitas ekspor file.
-3. 🖥️ **[cli_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/cli_interface.py)**: Mengelola visualisasi menu CLI, input data terminal dengan validasi ketat, cetak tabel ASCII, serta aksi pencarian dan penghapusan.
-4. 🎨 **[gui_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/gui_interface.py)**: Antarmuka GUI desktop berbasis `Tkinter` (Dark Mode) untuk memvisualisasikan linimasa jadwal kuliah secara interaktif dengan fitur filter real-time dan klik detail.
+2. ⚙️ **[engine.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/engine.py)**: Berisi representasi objek data kelas (`Kuliah`), data dummy, logika utama **Algoritma Greedy**, validasi jam operasional (07:00 - 20:00), persistensi JSON, dan utilitas ekspor file.
+3. 🖥️ **[cli_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/cli_interface.py)**: Mengelola visualisasi menu CLI, input data terminal dengan validasi ketat, cetak tabel ASCII, serta aksi pencarian, penghapusan, pengeditan dengan saran otomatis, dan simpan/muat JSON.
+4. 🎨 **[gui_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/gui_interface.py)**: Antarmuka GUI desktop berbasis `Tkinter` (Dark Mode) untuk memvisualisasikan linimasa jadwal kuliah secara interaktif dengan fitur filter real-time, klik detail, pengeditan dengan saran otomatis, validasi jam operasional, dan simpan/muat JSON.
 5. 🧪 **[test_scheduler.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/test_scheduler.py)**: File skrip pengujian otomatis (unit test) untuk memverifikasi logika kebenaran bebas bentrok.
 
 ---
@@ -30,42 +30,52 @@ graph TD
     C --> F{Pilih Menu CLI}
     F -- "1. Lihat Raw Data" --> C1[Tampilkan Tabel Pengajuan Jadwal] --> C
     F -- "2. Tambah Data" --> C2[Input Data + Validasi Waktu] --> C
-    F -- "3. Cari & Filter" --> C3[Filter Nama / Ruangan] --> C
+    F -- "3. Cari & Filter" --> C3[Filter Nama / Ruangan / Hari] --> C
     F -- "4. Hapus Jadwal" --> C4[Hapus berdasarkan Kode Kelas] --> C
     F -- "5. Optimasi Greedy" --> C5[Kelompokkan -> Sortir -> Seleksi] --> C
     F -- "6. Lihat Hasil" --> C6[Tampilkan Jadwal Diterima & Bentrok] --> C
     F -- "7. Ekspor File" --> C7[Ekspor hasil ke txt] --> C
-    F -- "8. Muat Dummy" --> C8[Muat Ulang 14 Data Dummy] --> C
-    F -- "9. Reset" --> C9[Kosongkan Data] --> C
+    F -- "8. Reset Dummy" --> C8[Muat Ulang 14 Data Dummy] --> C
+    F -- "9. Hapus Semua" --> C9[Kosongkan Data] --> C
     F -- "10. Edukasi" --> C10[Tampilkan Teori & Kompleksitas] --> C
-    F -- "11. Kembali" --> B
+    F -- "11. Edit Jadwal" --> C11[Ubah Jadwal + Saran Alternatif] --> C
+    F -- "12. Simpan JSON" --> C12[Simpan ke jadwal_kuliah.json] --> C
+    F -- "13. Muat JSON" --> C13[Muat dari jadwal_kuliah.json] --> C
+    F -- "14. Keluar" --> E
     
     D --> G[Tampilan Utama GUI]
     G --> G1[Form Tambah Jadwal Baru]
     G --> G2[Visualisasi Timeline Real-Time dengan Klik Detail]
-    G --> G3[Tabel Status Kelas dengan Live Search & Hapus]
+    G --> G3[Tabel Status Kelas dengan Live Search, Edit & Hapus]
     G --> G4[Tombol Jalankan Optimasi & Ekspor Laporan]
+    G --> G5[Tombol Simpan & Muat File JSON]
     G4 --> C5
     G3 --> G
 ```
 
 ---
 
-## 🌟 Fitur Baru Interaktif (Tahap 2)
+## 🌟 Fitur Unggulan Sistem Penjadwalan
 
-Untuk meningkatkan fungsionalitas dan pengalaman pengguna yang dinamis, kami telah menambahkan fitur interaktif berikut:
+Sistem ini didesain kaya fitur untuk memberikan solusi penjadwalan yang realistis dan komprehensif:
 
-1. **Hapus Jadwal Tertentu**:
-   - **CLI (Menu 4)**: Pengguna dapat menghapus kelas tertentu dengan memasukkan kode kelas (misal: `C01`).
-   - **GUI**: Pengguna cukup memilih baris jadwal pada tabel, lalu menekan tombol **"Hapus Kelas Terpilih"**. Jadwal visual dan status optimasi akan diperbarui secara otomatis.
-2. **Cari & Filter Real-Time**:
-   - **CLI (Menu 3)**: Memungkinkan pencarian data kelas secara spesifik berdasarkan nama mata kuliah atau ruangan.
-   - **GUI**: Penambahan kolom **"Cari/Filter Kelas"** di atas tabel. Data pada tabel Treeview akan otomatis menyaring saat pengguna mengetik (filter berdasarkan nama kelas, ruangan, atau kode secara real-time).
-3. **Ekspor Hasil Laporan**:
-   - **CLI (Menu 7) & GUI (Tombol Ekspor Laporan)**: Menyimpan hasil optimasi (diterima & bentrok) ke berkas teks eksternal (default: `hasil_optimasi.txt`) dengan format yang rapi dan profesional untuk kebutuhan pelaporan tugas besar.
-4. **Klik Detail Jadwal di Timeline (GUI)**:
-   - Kotak jadwal pada timeline Canvas kini dapat diklik menggunakan mouse kiri.
-   - Aplikasi akan mendeteksi klik tersebut dan memunculkan pop-up dialog rincian informasi kelas lengkap (Kode, Nama, Ruangan, Jam, Durasi dalam jam/menit, dan Status kelulusan optimasi).
+1. **Optimasi Greedy per (Ruangan, Hari)**:
+   - Mengelompokkan kelas berdasarkan kombinasi ruangan dan hari kerja (Senin - Minggu) untuk mencegah bentrok secara tepat dan efisien.
+2. **Saran Alternatif untuk Jadwal Bentrok**:
+   - Jika kelas bentrok, sistem akan otomatis menganalisis dan merekomendasikan:
+     - **Ruangan Alternatif**: Ruangan lain yang kosong pada hari dan jam yang sama.
+     - **Waktu Alternatif**: Slot waktu kosong terdekat pada hari dan ruangan yang sama.
+     - **Hari Alternatif**: Hari lain yang kosong pada ruangan dan jam yang sama.
+3. **Validasi Jam Operasional Kampus**:
+   - Mengharuskan seluruh jadwal berada di dalam rentang jam **07:00 s.d. 20:00**. Setiap input di luar jam ini akan ditolak secara otomatis baik di CLI maupun GUI.
+4. **Persistensi Data JSON (Simpan & Muat)**:
+   - Data jadwal dapat disimpan secara permanen ke file JSON (default: `jadwal_kuliah.json`) dan dimuat kembali kapan saja, sehingga data tidak hilang saat aplikasi ditutup.
+5. **Daftar Ruangan Terstandar**:
+   - Kampus didefinisikan dengan ruangan spesifik:
+     - **Gedung E Lantai 1**: E101, E102, E103, E104, E105
+     - **Gedung E Lantai 2**: E201, E202, E203, E204, E205
+     - **Gedung E Lantai 3**: E301, E302, E303, E304, E305
+     - **Laboratorium Komputer**: Lab Kom 1, Lab Kom 2
 
 ---
 
@@ -77,10 +87,10 @@ Strategi greedy yang digunakan adalah **memilih kelas yang selesai paling cepat 
 Jika kita memilih kelas yang selesai lebih awal, ruangan akan dibebaskan secepat mungkin. Ruangan yang cepat kosong memiliki sisa waktu maksimum untuk diisi oleh kelas-kelas berikutnya. Hal ini dibuktikan secara matematis selalu menghasilkan jumlah kelas yang dijadwalkan secara maksimal dalam suatu ruangan.
 
 ### Langkah-Langkah Algoritma:
-1. **Pengelompokkan per Ruangan**:
-   Karena optimasi dilakukan untuk setiap ruangan secara independen, seluruh daftar kelas dikelompokkan berdasarkan nama ruangan ke dalam struktur data dictionary.
+1. **Pengelompokkan per (Ruangan, Hari)**:
+   Karena optimasi dilakukan untuk setiap ruangan dan hari secara independen, seluruh daftar kelas dikelompokkan berdasarkan pasangan `(ruangan, hari)`.
 2. **Pengurutan (Sorting)**:
-   Untuk setiap ruangan, semua kelas diurutkan berdasarkan **waktu selesai** (`selesai_menit`) secara *ascending* (meningkat). Jika ada waktu selesai yang sama, kelas diurutkan berdasarkan waktu mulai terawal.
+   Untuk setiap kelompok, semua kelas diurutkan berdasarkan **waktu selesai** (`selesai_menit`) secara *ascending* (meningkat). Jika ada waktu selesai yang sama, kelas diurutkan berdasarkan waktu mulai terawal.
 3. **Seleksi Linier (Greedy Selection)**:
    - Ambil kelas pertama yang berada di urutan teratas (yang selesai paling cepat). Kelas ini dijamin masuk dalam daftar **Jadwal Diterima**.
    - Iterasi ke kelas-kelas berikutnya:
@@ -95,20 +105,20 @@ Jika kita memilih kelas yang selesai lebih awal, ruangan akan dibebaskan secepat
 Algoritma ini memiliki kompleksitas keseluruhan sebesar **$O(n \log n)$**. Berikut rincian analisisnya:
 
 ### 1. Kompleksitas Waktu:
-- **Pengelompokkan Kelas**: Mengelompokkan $n$ kelas ke dalam dictionary ruangan membutuhkan waktu linear **$O(n)$**.
+- **Pengelompokkan Kelas**: Mengelompokkan $n$ kelas ke dalam dictionary ruangan-hari membutuhkan waktu linear **$O(n)$**.
 - **Pengurutan (Sorting)**:
-  Misalkan terdapat $R$ ruangan, dan ruangan ke-$i$ memiliki $n_i$ kelas, sehingga $\sum n_i = n$.
-  Proses pengurutan untuk ruangan ke-$i$ menggunakan Timsort (fungsi `sorted` bawaan Python) membutuhkan waktu $O(n_i \log n_i)$.
-  Total waktu pengurutan untuk semua ruangan adalah:
-  $$\sum_{i=1}^{R} O(n_i \log n_i) \le O(n \log n)$$
+   Misalkan terdapat $R \times D$ kelompok (ruangan dan hari), dan kelompok ke-$i$ memiliki $n_i$ kelas, sehingga $\sum n_i = n$.
+   Proses pengurutan untuk kelompok ke-$i$ menggunakan Timsort (fungsi `sorted` bawaan Python) membutuhkan waktu $O(n_i \log n_i)$.
+   Total waktu pengurutan untuk semua kelompok adalah:
+   $$\sum_{i} O(n_i \log n_i) \le O(n \log n)$$
 - **Seleksi Linier**:
-  Untuk setiap ruangan, kita melintasi kelas terurut sebanyak satu kali untuk memeriksa bentrok. Ini memakan waktu linear **$O(n)$** untuk seluruh ruangan.
-  
+   Untuk setiap kelompok, kita melintasi kelas terurut sebanyak satu kali untuk memeriksa bentrok. Ini memakan waktu linear **$O(n)$** untuk seluruh kelompok.
+   
 **Total Kompleksitas Waktu**:
 $$T(n) = O(n) + O(n \log n) + O(n) = \mathbf{O(n \log n)}$$
 
 ### 2. Kompleksitas Ruang:
-- Menyimpan dictionary ruangan dan list hasil optimasi membutuhkan ruang memori tambahan sebesar **$O(n)$**.
+- Menyimpan dictionary kelompok dan list hasil optimasi membutuhkan ruang memori tambahan sebesar **$O(n)$**.
 
 
 ## 🚀 Petunjuk Pengoperasian Program

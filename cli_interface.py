@@ -249,9 +249,7 @@ def add_schedule_cli(classes, accepted, conflicted, optimized_run):
         try:
             m_mulai   = parse_time(jam_mulai)
             m_selesai = parse_time(jam_selesai)
-            if m_mulai >= m_selesai:
-                print("[x] Error: Jam selesai harus setelah jam mulai! Silakan input ulang.")
-                continue
+            validate_operational_hours(m_mulai, m_selesai)
             break
         except ValueError as e:
             print(f"[x] Error: {e}")
@@ -579,9 +577,7 @@ def edit_schedule_cli(classes, accepted, conflicted, optimized_run):
             try:
                 m_mulai   = parse_time(jam_mulai_temp)
                 m_selesai = parse_time(jam_selesai_temp)
-                if m_mulai >= m_selesai:
-                    print("[x] Error: Jam selesai harus setelah jam mulai! Silakan input ulang.")
-                    continue
+                validate_operational_hours(m_mulai, m_selesai)
                 break
             except ValueError as e:
                 print(f"[x] Error: {e}")
@@ -649,6 +645,56 @@ def export_schedule_cli(classes, accepted, conflicted, optimized_run):
         print(f"\n[x] Gagal mengekspor file: {e}")
     input("\nTekan Enter...")
 
+
+def save_schedule_cli(classes):
+    """Menyimpan data jadwal ke file JSON."""
+    print_header("SIMPAN DATA JADWAL KE JSON")
+    if not classes:
+        print("[!] Data kosong, tidak ada kelas untuk disimpan.")
+        input("\nTekan Enter...")
+        return
+        
+    filename = input("Masukkan nama file JSON (default: jadwal_kuliah.json): ").strip()
+    if not filename:
+        filename = "jadwal_kuliah.json"
+        
+    try:
+        save_to_json(filename, classes)
+        print(f"\n[v] Sukses: Data berhasil disimpan ke '{filename}'!")
+    except Exception as e:
+        print(f"\n[x] Gagal menyimpan file: {e}")
+    input("\nTekan Enter...")
+
+
+def load_schedule_cli(classes, accepted, conflicted, optimized_run):
+    """Memuat data jadwal dari file JSON."""
+    print_header("MUAT DATA JADWAL DARI JSON")
+    filename = input("Masukkan nama file JSON (default: jadwal_kuliah.json): ").strip()
+    if not filename:
+        filename = "jadwal_kuliah.json"
+        
+    if not os.path.exists(filename):
+        print(f"\n[x] File '{filename}' tidak ditemukan.")
+        input("\nTekan Enter...")
+        return classes, accepted, conflicted, optimized_run
+        
+    try:
+        loaded = load_from_json(filename)
+        classes.clear()
+        classes.extend(loaded)
+        # Reset state optimasi setelah memuat data baru
+        accepted = []
+        conflicted = []
+        optimized_run = False
+        print(f"\n[v] Sukses: Berhasil memuat {len(loaded)} kelas dari '{filename}'!")
+        print("    Jalankan kembali Optimasi (Menu 5) untuk memperbarui jadwal.")
+    except Exception as e:
+        print(f"\n[x] Gagal memuat file: {e}")
+        
+    input("\nTekan Enter...")
+    return classes, accepted, conflicted, optimized_run
+
+
 def run_cli_main(classes):
     """Looping Menu CLI Utama."""
     # Simpan hasil optimasi sementara agar bisa dilihat berulang
@@ -673,10 +719,12 @@ def run_cli_main(classes):
         print(" [9]  Hapus/Reset Seluruh Data")
         print(" [10] Edukasi Teori & Kompleksitas Algoritma")
         print(" [11] Edit Jadwal")
-        print(" [12] Keluar dari CLI")
+        print(" [12] Simpan Data ke File JSON")
+        print(" [13] Muat Data dari File JSON")
+        print(" [14] Keluar dari CLI")
         print("-" * 70)
         
-        pilihan = input("Pilih Menu (1-12): ").strip()
+        pilihan = input("Pilih Menu (1-14): ").strip()
         
         if pilihan == '1':
             if not classes:
@@ -746,9 +794,17 @@ def run_cli_main(classes):
             )
 
         elif pilihan == '12':
+            save_schedule_cli(classes)
+
+        elif pilihan == '13':
+            classes, accepted, conflicted, optimized_run = load_schedule_cli(
+                classes, accepted, conflicted, optimized_run
+            )
+
+        elif pilihan == '14':
             print("\nTerima kasih telah menggunakan sistem ini.")
             break
 
         else:
-            print("\n[x] Pilihan tidak valid! Silakan masukkan angka 1-12.")
+            print("\n[x] Pilihan tidak valid! Silakan masukkan angka 1-14.")
             input("\nTekan Enter...")

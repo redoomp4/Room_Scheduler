@@ -7,7 +7,8 @@ dengan benar dan menjamin tidak ada jadwal kuliah yang tumpang tindih (overlap)
 pada ruangan yang sama dan hari yang sama, serta memverifikasi fungsi rekomendasi saran jadwal.
 """
 
-from engine import get_dummy_data, greedy_schedule, get_schedule_suggestions
+import os
+from engine import get_dummy_data, greedy_schedule, get_schedule_suggestions, save_to_json, load_from_json, validate_operational_hours, parse_time
 
 def test_no_overlap():
     print("[...] Menjalankan pengujian algoritma...")
@@ -80,8 +81,73 @@ def test_schedule_suggestions():
         print(f"      - Pindah ke hari {d}")
 
 
+def test_json_persistence():
+    print("[...] Menjalankan pengujian persistensi data JSON...")
+    classes = get_dummy_data()
+    temp_filename = "temp_test_schedule.json"
+    
+    try:
+        # Simpan ke JSON
+        save_to_json(temp_filename, classes)
+        assert os.path.exists(temp_filename), "Berkas JSON tidak terbuat!"
+        
+        # Muat dari JSON
+        loaded_classes = load_from_json(temp_filename)
+        assert len(loaded_classes) == len(classes), "Jumlah kelas yang dimuat tidak sama!"
+        
+        for c1, c2 in zip(classes, loaded_classes):
+            assert c1.code == c2.code, "Kode kelas tidak cocok!"
+            assert c1.nama == c2.nama, "Nama kelas tidak cocok!"
+            assert c1.ruangan == c2.ruangan, "Ruangan tidak cocok!"
+            assert c1.jam_mulai == c2.jam_mulai, "Jam mulai tidak cocok!"
+            assert c1.jam_selesai == c2.jam_selesai, "Jam selesai tidak cocok!"
+            assert c1.hari == c2.hari, "Hari tidak cocok!"
+            
+        print("[v] Sukses: Pengujian Persistensi JSON Berhasil!")
+    finally:
+        # Bersihkan file temp
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
+
+
+def test_operational_hours_validation():
+    print("[...] Menjalankan pengujian validasi jam operasional...")
+    
+    # Jam valid (di dalam 07:00 - 20:00)
+    try:
+        validate_operational_hours(parse_time("07:00"), parse_time("20:00"))
+        validate_operational_hours(parse_time("08:00"), parse_time("10:00"))
+    except ValueError as e:
+        assert False, f"Seharusnya valid tetapi terdeteksi error: {e}"
+        
+    # Jam tidak valid (di luar 07:00 - 20:00)
+    try:
+        validate_operational_hours(parse_time("06:59"), parse_time("09:00"))
+        assert False, "Seharusnya gagal untuk jam mulai sebelum 07:00!"
+    except ValueError:
+        pass
+        
+    try:
+        validate_operational_hours(parse_time("18:00"), parse_time("20:01"))
+        assert False, "Seharusnya gagal untuk jam selesai setelah 20:00!"
+    except ValueError:
+        pass
+
+    try:
+        validate_operational_hours(parse_time("10:00"), parse_time("09:00"))
+        assert False, "Seharusnya gagal jika jam mulai >= jam selesai!"
+    except ValueError:
+        pass
+        
+    print("[v] Sukses: Pengujian Validasi Jam Operasional Berhasil!")
+
+
 if __name__ == "__main__":
     test_no_overlap()
     print("-" * 50)
     test_schedule_suggestions()
+    print("-" * 50)
+    test_json_persistence()
+    print("-" * 50)
+    test_operational_hours_validation()
 

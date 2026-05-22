@@ -9,7 +9,8 @@ penambahan data lewat form, dan grafik status optimasi (Diterima vs Bentrok).
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, minutes_to_str, export_schedule_to_file, get_schedule_suggestions, VALID_ROOMS
+import re
+from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, minutes_to_str, export_schedule_to_file, get_schedule_suggestions, VALID_ROOMS, validate_operational_hours, save_to_json, load_from_json
 
 
 class AppGUI:
@@ -140,7 +141,17 @@ class AppGUI:
         btn_reset.pack(fill=tk.X, ipady=5, pady=(0, 5))
 
         btn_clear = tk.Button(left_panel, text="Kosongkan Semua Data", bg=self.color_danger, fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground="#c0392b", activeforeground=self.fg_white, command=self.clear_all_gui)
-        btn_clear.pack(fill=tk.X, ipady=5, pady=(0, 20))
+        btn_clear.pack(fill=tk.X, ipady=5, pady=(0, 10))
+
+        # JSON Buttons Frame
+        json_btn_frame = tk.Frame(left_panel, bg=self.bg_card)
+        json_btn_frame.pack(fill=tk.X, pady=(0, 20))
+
+        btn_save_json = tk.Button(json_btn_frame, text="Simpan ke JSON", bg="#D35400", fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground="#b34700", activeforeground=self.fg_white, command=self.save_json_gui)
+        btn_save_json.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=5, padx=(0, 5))
+
+        btn_load_json = tk.Button(json_btn_frame, text="Muat dari JSON", bg="#16A085", fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground="#117a65", activeforeground=self.fg_white, command=self.load_json_gui)
+        btn_load_json.pack(side=tk.RIGHT, fill=tk.X, expand=True, ipady=5, padx=(5, 0))
 
         # --- Panel Statistik ---
         self.stats_frame = tk.LabelFrame(left_panel, text="Statistik Penjadwalan", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 10, "bold"), padx=10, pady=10, bd=1, relief=tk.SOLID)
@@ -516,10 +527,7 @@ Analisis Kompleksitas Waktu:
         try:
             m_mulai = parse_time(jam_mulai)
             m_selesai = parse_time(jam_selesai)
-            
-            if m_mulai >= m_selesai:
-                messagebox.showerror("Error Input", "Jam selesai harus setelah jam mulai!")
-                return
+            validate_operational_hours(m_mulai, m_selesai)
         except ValueError as e:
             messagebox.showerror("Error Input", str(e))
             return
@@ -768,7 +776,6 @@ Analisis Kompleksitas Waktu:
         combobox_values = ["-- Pilih Saran Jadwal --"]
         suggestion_data = {}
         
-        import re
         for item in suggestions.get('alt_rooms', []):
             match = re.search(r"Ruang '([^']+)'", item)
             if match:
@@ -832,9 +839,7 @@ Analisis Kompleksitas Waktu:
             try:
                 m_mulai = parse_time(mulai_val)
                 m_selesai = parse_time(selesai_val)
-                if m_mulai >= m_selesai:
-                    messagebox.showerror("Error Input", "Jam selesai harus setelah jam mulai!", parent=edit_win)
-                    return
+                validate_operational_hours(m_mulai, m_selesai)
             except ValueError as e:
                 messagebox.showerror("Error Input", str(e), parent=edit_win)
                 return
@@ -971,6 +976,46 @@ Analisis Kompleksitas Waktu:
             detail_msg += sug_text
 
         messagebox.showinfo("Detail Informasi Kelas", detail_msg)
+
+    def save_json_gui(self):
+        """Menyimpan data jadwal ke file JSON."""
+        if not self.classes:
+            messagebox.showwarning("Data Kosong", "Tidak ada data kelas untuk disimpan!")
+            return
+            
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
+            title="Simpan Data Jadwal Ke JSON"
+        )
+        
+        if filepath:
+            try:
+                save_to_json(filepath, self.classes)
+                messagebox.showinfo("Simpan Berhasil", f"Data jadwal berhasil disimpan ke:\n{filepath}")
+            except Exception as e:
+                messagebox.showerror("Simpan Gagal", f"Gagal menyimpan berkas JSON: {e}")
+
+    def load_json_gui(self):
+        """Memuat data jadwal dari file JSON."""
+        filepath = filedialog.askopenfilename(
+            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
+            title="Muat Data Jadwal Dari JSON"
+        )
+        
+        if filepath:
+            try:
+                loaded = load_from_json(filepath)
+                self.classes.clear()
+                self.classes.extend(loaded)
+                # Reset state optimasi
+                self.is_optimized = False
+                self.accepted.clear()
+                self.conflicted.clear()
+                self.update_ui()
+                messagebox.showinfo("Muat Berhasil", f"Berhasil memuat {len(loaded)} kelas dari JSON!")
+            except Exception as e:
+                messagebox.showerror("Muat Gagal", f"Gagal memuat berkas JSON: {e}")
 
 def launch_gui(classes):
     """Fungsi pembantu untuk meluncurkan GUI."""
