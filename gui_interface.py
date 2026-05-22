@@ -112,6 +112,11 @@ class AppGUI:
         self.ent_ruang = tk.Entry(form_frame, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
         self.ent_ruang.pack(fill=tk.X, ipady=4, pady=(0, 8))
 
+        tk.Label(form_frame, text="Hari:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).pack(anchor=tk.W, pady=(2, 2))
+        self.cb_hari = ttk.Combobox(form_frame, values=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'], state="readonly", font=("Segoe UI", 10))
+        self.cb_hari.set('Senin')
+        self.cb_hari.pack(fill=tk.X, pady=(0, 8))
+
         time_frame = tk.Frame(form_frame, bg=self.bg_card)
         time_frame.pack(fill=tk.X, pady=(0, 10))
         
@@ -193,6 +198,12 @@ class AppGUI:
                                        font=("Segoe UI", 9, "bold"), command=self.draw_timeline)
         self.rbtn_opt.pack(side=tk.LEFT, padx=20)
 
+        tk.Label(ctrl_frame, text="Pilih Hari:", bg=self.bg_dark, fg=self.fg_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(30, 5))
+        self.cb_filter_hari = ttk.Combobox(ctrl_frame, values=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'], state="readonly", width=10, font=("Segoe UI", 9, "bold"))
+        self.cb_filter_hari.set('Senin')
+        self.cb_filter_hari.pack(side=tk.LEFT, padx=5)
+        self.cb_filter_hari.bind("<<ComboboxSelected>>", lambda event: self.draw_timeline())
+
         # Canvas untuk menggambar grafik timeline
         self.canvas_frame = tk.Frame(self.tab_visual, bg=self.bg_card, bd=1, relief=tk.SOLID)
         self.canvas_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
@@ -228,11 +239,12 @@ class AppGUI:
         self.lbl_table_header = tk.Label(table_frame, text="Daftar Kelas (Menunggu Optimasi)", bg=self.bg_dark, fg=self.fg_white, font=("Segoe UI", 10, "bold"))
         self.lbl_table_header.pack(anchor=tk.W, pady=(5, 5))
 
-        columns = ("code", "nama", "ruangan", "jam_mulai", "jam_selesai", "status")
+        columns = ("code", "nama", "hari", "ruangan", "jam_mulai", "jam_selesai", "status")
         self.tree_classes = ttk.Treeview(table_frame, columns=columns, show="headings", height=10)
         
         self.tree_classes.heading("code", text="Kode")
         self.tree_classes.heading("nama", text="Mata Kuliah")
+        self.tree_classes.heading("hari", text="Hari")
         self.tree_classes.heading("ruangan", text="Ruangan")
         self.tree_classes.heading("jam_mulai", text="Jam Mulai")
         self.tree_classes.heading("jam_selesai", text="Jam Selesai")
@@ -240,6 +252,7 @@ class AppGUI:
 
         self.tree_classes.column("code", width=60, anchor=tk.CENTER)
         self.tree_classes.column("nama", width=250, anchor=tk.W)
+        self.tree_classes.column("hari", width=80, anchor=tk.CENTER)
         self.tree_classes.column("ruangan", width=120, anchor=tk.CENTER)
         self.tree_classes.column("jam_mulai", width=100, anchor=tk.CENTER)
         self.tree_classes.column("jam_selesai", width=100, anchor=tk.CENTER)
@@ -345,13 +358,24 @@ Analisis Kompleksitas Waktu:
             )
             return
 
-        # Dapatkan daftar ruangan unik
+        active_day = self.cb_filter_hari.get()
+        day_classes = [c for c in self.classes if c.hari == active_day]
+
+        # Dapatkan daftar ruangan unik dari semua pengajuan agar layout ruangan konsisten
         rooms = sorted(list(set(c.ruangan for c in self.classes)))
         
-        # Hitung rentang waktu visualisasi secara dinamis
+        if not day_classes:
+            self.canvas.create_text(
+                self.canvas.winfo_width()/2, self.canvas.winfo_height()/2,
+                text=f"Tidak ada jadwal kuliah pada hari {active_day}.",
+                fill="#888888", font=("Segoe UI", 11)
+            )
+            return
+
+        # Hitung rentang waktu visualisasi secara dinamis berdasarkan kelas hari ini
         min_min = 420  # 07:00
         max_min = 900  # 15:00
-        for c in self.classes:
+        for c in day_classes:
             min_min = min(min_min, c.mulai_menit)
             max_min = max(max_min, c.selesai_menit)
             
@@ -403,8 +427,8 @@ Analisis Kompleksitas Waktu:
             # Tulis nama Ruangan di kolom kiri
             self.canvas.create_text(45, y_mid, text=room, fill=self.fg_white, font=("Segoe UI", 10, "bold"))
 
-            # Dapatkan kelas untuk ruangan ini
-            room_classes = [c for c in self.classes if c.ruangan == room]
+            # Dapatkan kelas untuk ruangan ini pada hari ini
+            room_classes = [c for c in day_classes if c.ruangan == room]
             
             # Tentukan visualisasi berdasarkan pilihan radio button
             mode = self.vis_mode_var.get()
@@ -480,6 +504,7 @@ Analisis Kompleksitas Waktu:
     def add_class_gui(self):
         nama = self.ent_nama.get().strip()
         ruangan = self.ent_ruang.get().strip().upper()
+        hari = self.cb_hari.get()
         jam_mulai = self.ent_mulai.get().strip()
         jam_selesai = self.ent_selesai.get().strip()
 
@@ -488,7 +513,6 @@ Analisis Kompleksitas Waktu:
             return
 
         try:
-            # Validasi format waktu
             m_mulai = parse_time(jam_mulai)
             m_selesai = parse_time(jam_selesai)
             
@@ -507,8 +531,37 @@ Analisis Kompleksitas Waktu:
         next_num = max(existing_nums) + 1 if existing_nums else 1
         new_code = f"C{next_num:02d}"
 
+        # --- Validasi Bentrok Real-Time (Dry-Run) ---
+        sim_classes = [Kuliah(c.code, c.nama, c.ruangan, c.jam_mulai, c.jam_selesai, c.hari) for c in self.classes]
+        new_sim = Kuliah(new_code, nama, ruangan, jam_mulai, jam_selesai, hari)
+        sim_classes.append(new_sim)
+        
+        sim_accepted, sim_conflicted = greedy_schedule(sim_classes)
+        is_conflicted = any(c.code == new_code for c in sim_conflicted)
+        
+        if is_conflicted:
+            overlapping_classes = []
+            for c in sim_accepted:
+                if c.ruangan == new_sim.ruangan and c.hari == new_sim.hari and c.code != new_sim.code:
+                    if new_sim.mulai_menit < c.selesai_menit and new_sim.selesai_menit > c.mulai_menit:
+                        overlapping_classes.append(c)
+            
+            conflict_info = ""
+            if overlapping_classes:
+                conflict_info = "\n\nJadwal yang menabrak:\n" + "\n".join(
+                    f"• {c.code}: {c.nama} ({c.jam_mulai}-{c.jam_selesai})" for c in overlapping_classes
+                )
+            
+            msg = (
+                f"Peringatan: Jadwal baru yang Anda tambahkan BENTROK "
+                f"pada hari {hari} di ruang '{ruangan}' pukul {jam_mulai}-{jam_selesai}.{conflict_info}"
+                f"\n\nApakah Anda tetap ingin menambahkan jadwal ini?"
+            )
+            if not messagebox.askyesno("Konfirmasi Bentrok", msg):
+                return
+
         # Tambahkan kelas baru
-        new_class = Kuliah(new_code, nama, ruangan, jam_mulai, jam_selesai)
+        new_class = Kuliah(new_code, nama, ruangan, jam_mulai, jam_selesai, hari)
         self.classes.append(new_class)
         
         # Reset input form
@@ -516,14 +569,23 @@ Analisis Kompleksitas Waktu:
         self.ent_ruang.delete(0, tk.END)
         self.ent_mulai.delete(0, tk.END)
         self.ent_selesai.delete(0, tk.END)
+        self.cb_hari.set('Senin')
         
-        # Tandai bahwa data berubah dan perlu optimasi ulang
-        self.is_optimized = False
-        self.accepted.clear()
-        self.conflicted.clear()
-        
+        # Auto-Reoptimize
+        was_optimized = self.is_optimized
+        if was_optimized:
+            self.accepted, self.conflicted = greedy_schedule(self.classes)
+            self.is_optimized = True
+            # Pindahkan filter hari aktif ke hari kelas yang baru ditambahkan agar langsung terlihat
+            self.cb_filter_hari.set(hari)
+        else:
+            self.is_optimized = False
+            self.accepted.clear()
+            self.conflicted.clear()
+            
         self.update_ui()
-        messagebox.showinfo("Sukses", f"Kelas '{nama}' ({new_code}) di {ruangan} berhasil ditambahkan.")
+        status_text = "diterima" if (not was_optimized or new_class in self.accepted) else "bentrok"
+        messagebox.showinfo("Sukses", f"Kelas '{nama}' ({new_code}) di {ruangan} ({hari}) berhasil ditambahkan dan berstatus {status_text}.")
 
     def run_greedy_gui(self):
         if not self.classes:
@@ -567,9 +629,12 @@ Analisis Kompleksitas Waktu:
         for item in self.tree_classes.get_children():
             self.tree_classes.delete(item)
             
-        # Isi dengan data yang sesuai
-        for c in sorted(self.classes, key=lambda x: (x.ruangan, x.mulai_menit)):
-            if not keyword or keyword in c.nama.lower() or keyword in c.ruangan.lower() or keyword in c.code.lower():
+        # Isi dengan data yang sesuai (diurutkan berdasarkan Hari -> Ruangan -> Jam Mulai)
+        day_order = {'Senin': 0, 'Selasa': 1, 'Rabu': 2, 'Kamis': 3, 'Jumat': 4, 'Sabtu': 5, 'Minggu': 6}
+        sorted_classes = sorted(self.classes, key=lambda x: (day_order.get(x.hari, 7), x.ruangan, x.mulai_menit))
+        
+        for c in sorted_classes:
+            if not keyword or keyword in c.nama.lower() or keyword in c.ruangan.lower() or keyword in c.code.lower() or keyword in c.hari.lower():
                 status = "Menunggu Optimasi"
                 row_tag = "pending"
                 if self.is_optimized:
@@ -579,7 +644,7 @@ Analisis Kompleksitas Waktu:
                     else:
                         status = "Bentrok (Ditolak)"
                         row_tag = "conflicted"
-                self.tree_classes.insert("", tk.END, values=(c.code, c.nama, c.ruangan, c.jam_mulai, c.jam_selesai, status), tags=(row_tag,))
+                self.tree_classes.insert("", tk.END, values=(c.code, c.nama, c.hari, c.ruangan, c.jam_mulai, c.jam_selesai, status), tags=(row_tag,))
 
     def delete_selected_gui(self):
         """Menghapus jadwal kuliah yang dipilih pada tabel Treeview."""
@@ -604,9 +669,16 @@ Analisis Kompleksitas Waktu:
         if target_class:
             if messagebox.askyesno("Konfirmasi Hapus", f"Apakah Anda yakin ingin menghapus kelas '{target_class.nama}' ({target_class.code})?"):
                 self.classes.remove(target_class)
-                self.is_optimized = False
-                self.accepted.clear()
-                self.conflicted.clear()
+                
+                # Auto-Reoptimize
+                if self.is_optimized:
+                    self.accepted, self.conflicted = greedy_schedule(self.classes)
+                    self.is_optimized = True
+                else:
+                    self.is_optimized = False
+                    self.accepted.clear()
+                    self.conflicted.clear()
+                
                 self.update_ui()
                 messagebox.showinfo("Hapus Berhasil", f"Kelas '{target_class.nama}' berhasil dihapus.")
 
@@ -629,12 +701,10 @@ Analisis Kompleksitas Waktu:
                 break
                 
         if not target_class:
-            return
-
-        # Buat Window Toplevel Modal
+            return        # Buat Window Toplevel Modal
         edit_win = tk.Toplevel(self.root)
         edit_win.title(f"Edit Jadwal Kelas - {target_class.code}")
-        edit_win.geometry("400x320")
+        edit_win.geometry("400x360")
         edit_win.resizable(False, False)
         edit_win.configure(bg=self.bg_card)
         edit_win.transient(self.root)
@@ -646,12 +716,12 @@ Analisis Kompleksitas Waktu:
         root_w = self.root.winfo_width()
         root_h = self.root.winfo_height()
         win_x = root_x + (root_w - 400) // 2
-        win_y = root_y + (root_h - 320) // 2
+        win_y = root_y + (root_h - 360) // 2
         edit_win.geometry(f"+{win_x}+{win_y}")
 
         # Label Header
         lbl_title = tk.Label(edit_win, text=f"Edit Kelas {target_class.code}", bg=self.bg_card, fg=self.color_primary, font=("Segoe UI", 12, "bold"))
-        lbl_title.pack(pady=(15, 15))
+        lbl_title.pack(pady=(15, 10))
 
         # Container Frame
         container = tk.Frame(edit_win, bg=self.bg_card, padx=20)
@@ -669,17 +739,23 @@ Analisis Kompleksitas Waktu:
         ent_ruang.insert(0, target_class.ruangan)
         ent_ruang.grid(row=1, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
 
+        # Hari
+        tk.Label(container, text="Hari:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=2, column=0, sticky=tk.W, pady=5)
+        cb_hari = ttk.Combobox(container, values=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'], state="readonly", font=("Segoe UI", 10))
+        cb_hari.set(target_class.hari)
+        cb_hari.grid(row=2, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=2, pady=5)
+
         # Jam Mulai
-        tk.Label(container, text="Mulai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=2, column=0, sticky=tk.W, pady=5)
+        tk.Label(container, text="Mulai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=3, column=0, sticky=tk.W, pady=5)
         ent_mulai = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
         ent_mulai.insert(0, target_class.jam_mulai)
-        ent_mulai.grid(row=2, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+        ent_mulai.grid(row=3, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
 
         # Jam Selesai
-        tk.Label(container, text="Selesai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=3, column=0, sticky=tk.W, pady=5)
+        tk.Label(container, text="Selesai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=4, column=0, sticky=tk.W, pady=5)
         ent_selesai = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
         ent_selesai.insert(0, target_class.jam_selesai)
-        ent_selesai.grid(row=3, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+        ent_selesai.grid(row=4, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
 
         # Konfigurasi grid weight agar Entry memanjang
         container.grid_columnconfigure(1, weight=1)
@@ -687,10 +763,11 @@ Analisis Kompleksitas Waktu:
         def save_changes():
             nama_val = ent_nama.get().strip()
             ruang_val = ent_ruang.get().strip().upper()
+            hari_val = cb_hari.get()
             mulai_val = ent_mulai.get().strip()
             selesai_val = ent_selesai.get().strip()
 
-            if not nama_val or not ruang_val or not mulai_val or not selesai_val:
+            if not nama_val or not ruang_val or not hari_val or not mulai_val or not selesai_val:
                 messagebox.showerror("Error Input", "Semua kolom wajib diisi!", parent=edit_win)
                 return
 
@@ -704,22 +781,66 @@ Analisis Kompleksitas Waktu:
                 messagebox.showerror("Error Input", str(e), parent=edit_win)
                 return
 
+            # --- Deteksi Bentrok Real-Time (Dry-Run) ---
+            sim_classes = []
+            for c in self.classes:
+                if c.code == target_class.code:
+                    sim_classes.append(Kuliah(c.code, nama_val, ruang_val, mulai_val, selesai_val, hari_val))
+                else:
+                    sim_classes.append(Kuliah(c.code, c.nama, c.ruangan, c.jam_mulai, c.jam_selesai, c.hari))
+
+            sim_accepted, sim_conflicted = greedy_schedule(sim_classes)
+            is_still_conflicted = any(c.code == target_class.code for c in sim_conflicted)
+
+            if is_still_conflicted:
+                overlapping_classes = []
+                target_sim = next(c for c in sim_classes if c.code == target_class.code)
+                for c in sim_accepted:
+                    if c.ruangan == target_sim.ruangan and c.hari == target_sim.hari and c.code != target_sim.code:
+                        if target_sim.mulai_menit < c.selesai_menit and target_sim.selesai_menit > c.mulai_menit:
+                            overlapping_classes.append(c)
+                
+                conflict_info = ""
+                if overlapping_classes:
+                    conflict_info = "\n\nJadwal yang menabrak:\n" + "\n".join(
+                        f"• {c.code}: {c.nama} ({c.jam_mulai}-{c.jam_selesai})" for c in overlapping_classes
+                    )
+                
+                msg = (
+                    f"Peringatan: Jadwal baru yang Anda masukkan MASIH BENTROK "
+                    f"pada hari {hari_val} di ruang '{ruang_val}' pukul {mulai_val}-{selesai_val}.{conflict_info}"
+                    f"\n\nApakah Anda tetap ingin menyimpan perubahan ini?"
+                )
+                if not messagebox.askyesno("Konfirmasi Bentrok", msg, parent=edit_win):
+                    return
+
             # Simpan perubahan
+            was_optimized = self.is_optimized
+            
             target_class.nama = nama_val
             target_class.ruangan = ruang_val
+            target_class.hari = hari_val
             target_class.jam_mulai = mulai_val
             target_class.jam_selesai = selesai_val
             target_class.mulai_menit = m_mulai
             target_class.selesai_menit = m_selesai
 
-            # Reset optimasi
-            self.is_optimized = False
-            self.accepted.clear()
-            self.conflicted.clear()
+            # Auto-Reoptimize
+            if was_optimized:
+                self.accepted, self.conflicted = greedy_schedule(self.classes)
+                self.is_optimized = True
+                # Pindahkan filter hari aktif ke hari kelas yang diedit agar langsung terlihat hasilnya
+                self.cb_filter_hari.set(hari_val)
+            else:
+                self.is_optimized = False
+                self.accepted.clear()
+                self.conflicted.clear()
 
             self.update_ui()
             edit_win.destroy()
-            messagebox.showinfo("Sukses", f"Kelas '{target_class.nama}' ({target_class.code}) berhasil diperbarui.")
+            
+            status_text = "diterima" if (not was_optimized or target_class in self.accepted) else "bentrok"
+            messagebox.showinfo("Sukses", f"Kelas '{target_class.nama}' ({target_class.code}) berhasil diperbarui dan berstatus {status_text}.")
 
         # Tombol aksi
         btn_frame = tk.Frame(edit_win, bg=self.bg_card, pady=15)
@@ -729,14 +850,10 @@ Analisis Kompleksitas Waktu:
         btn_cancel.pack(side=tk.RIGHT, padx=(10, 20), ipady=4)
 
         btn_save = tk.Button(btn_frame, text="Simpan", bg=self.color_success, fg="#121214", font=("Segoe UI", 9, "bold"), bd=0, activebackground="#27ae60", activeforeground="#121214", command=save_changes, width=10)
-        btn_save.pack(side=tk.RIGHT, ipady=4)
+        btn_save.pack(side=tk.RIGHT, padx=(10, 10), ipady=4)
 
     def export_report_gui(self):
-        """Mengekspor laporan optimasi ke berkas teks via dialog file."""
-        if not self.is_optimized:
-            messagebox.showwarning("Belum Dioptimasi", "Silakan jalankan optimasi Greedy terlebih dahulu sebelum mengekspor laporan!")
-            return
-            
+        """Mengekspor laporan optimasi (.txt)."""
         filepath = filedialog.asksaveasfilename(
             defaultextension=".txt",
             filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")],
