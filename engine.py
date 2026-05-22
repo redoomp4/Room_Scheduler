@@ -95,6 +95,20 @@ class Kuliah:
         return f"Kuliah({self.code}, {self.nama}, {self.ruangan}, {self.hari} {self.jam_mulai}-{self.jam_selesai})"
 
 
+# Daftar ruangan valid yang didukung sistem
+VALID_ROOMS = [
+    # Gedung E Lantai 1
+    'E101', 'E102', 'E103', 'E104', 'E105',
+    # Gedung E Lantai 2
+    'E201', 'E202', 'E203', 'E204', 'E205',
+    # Gedung E Lantai 3
+    'E301', 'E302', 'E303', 'E304', 'E305',
+    # Laboratorium Komputer
+    'Lab Kom 1',
+    'Lab Kom 2'
+]
+
+
 def get_dummy_data():
     """
     Menyediakan minimal 10 data dummy perkuliahan untuk pengujian awal.
@@ -104,25 +118,25 @@ def get_dummy_data():
         list: Daftar objek Kuliah
     """
     dummy_configs = [
-        # Ruang AULA (Tersebar di Senin dan Selasa)
-        ('C01', 'Perancangan & Analisis Algoritma', 'AULA', '07:00', '09:00', 'Senin'),
-        ('C02', 'Aljabar Linear', 'AULA', '08:00', '10:00', 'Senin'),  # Bentrok dengan C01 di Senin
-        ('C03', 'Struktur Data', 'AULA', '09:00', '11:00', 'Senin'),   # Mulai tepat saat C01 selesai di Senin
-        ('C04', 'Pemrograman Web', 'AULA', '10:30', '12:30', 'Selasa'),
-        ('C05', 'Kecerdasan Buatan', 'AULA', '11:00', '13:00', 'Selasa'),# Bentrok dengan C04 di Selasa
+        # Ruang Lab Kom 2 (Tersebar di Senin dan Selasa)
+        ('C01', 'Perancangan & Analisis Algoritma', 'Lab Kom 2', '07:00', '09:00', 'Senin'),
+        ('C02', 'Aljabar Linear', 'Lab Kom 2', '08:00', '10:00', 'Senin'),  # Bentrok dengan C01 di Senin
+        ('C03', 'Struktur Data', 'Lab Kom 2', '09:00', '11:00', 'Senin'),   # Mulai tepat saat C01 selesai di Senin
+        ('C04', 'Pemrograman Web', 'Lab Kom 2', '10:30', '12:30', 'Selasa'),
+        ('C05', 'Kecerdasan Buatan', 'Lab Kom 2', '11:00', '13:00', 'Selasa'),# Bentrok dengan C04 di Selasa
  
-        # Ruang LAB-01 (Tersebar di Rabu dan Kamis)
-        ('C06', 'Basis Data', 'LAB-01', '07:30', '09:30', 'Rabu'),
-        ('C07', 'Keamanan Informasi', 'LAB-01', '09:00', '10:30', 'Rabu'), # Bentrok dengan C06 di Rabu
-        ('C08', 'Jaringan Komputer', 'LAB-01', '09:40', '11:40', 'Rabu'),  # Mulai setelah C06 selesai di Rabu
-        ('C09', 'Interaksi Manusia Komputer', 'LAB-01', '11:00', '13:00', 'Kamis'),
-        ('C10', 'Grafika Komputer', 'LAB-01', '12:00', '14:00', 'Kamis'),   # Bentrok dengan C09 di Kamis
+        # Ruang Lab Kom 1 (Tersebar di Rabu dan Kamis)
+        ('C06', 'Basis Data', 'Lab Kom 1', '07:30', '09:30', 'Rabu'),
+        ('C07', 'Keamanan Informasi', 'Lab Kom 1', '09:00', '10:30', 'Rabu'), # Bentrok dengan C06 di Rabu
+        ('C08', 'Jaringan Komputer', 'Lab Kom 1', '09:40', '11:40', 'Rabu'),  # Mulai setelah C06 selesai di Rabu
+        ('C09', 'Interaksi Manusia Komputer', 'Lab Kom 1', '11:00', '13:00', 'Kamis'),
+        ('C10', 'Grafika Komputer', 'Lab Kom 1', '12:00', '14:00', 'Kamis'),   # Bentrok dengan C09 di Kamis
  
-        # Ruang 301 (Tersebar di Jumat)
-        ('C11', 'Sistem Operasi', 'Ruang 301', '08:00', '10:00', 'Jumat'),
-        ('C12', 'Metode Numerik', 'Ruang 301', '09:30', '11:30', 'Jumat'),   # Bentrok dengan C11 di Jumat
-        ('C13', 'Bahasa Indonesia', 'Ruang 301', '10:00', '11:30', 'Jumat'), # Mulai tepat saat C11 selesai di Jumat
-        ('C14', 'Fisika Dasar', 'Ruang 301', '11:30', '13:00', 'Jumat'),      # Mulai setelah C13 selesai di Jumat
+        # Ruang E101 (Tersebar di Jumat)
+        ('C11', 'Sistem Operasi', 'E101', '08:00', '10:00', 'Jumat'),
+        ('C12', 'Metode Numerik', 'E101', '09:30', '11:30', 'Jumat'),   # Bentrok dengan C11 di Jumat
+        ('C13', 'Bahasa Indonesia', 'E101', '10:00', '11:30', 'Jumat'), # Mulai tepat saat C11 selesai di Jumat
+        ('C14', 'Fisika Dasar', 'E101', '11:30', '13:00', 'Jumat'),      # Mulai setelah C13 selesai di Jumat
     ]
     return [Kuliah(*config) for config in dummy_configs]
 

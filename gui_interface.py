@@ -9,7 +9,7 @@ penambahan data lewat form, dan grafik status optimasi (Diterima vs Bentrok).
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, minutes_to_str, export_schedule_to_file, get_schedule_suggestions
+from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, minutes_to_str, export_schedule_to_file, get_schedule_suggestions, VALID_ROOMS
 
 
 class AppGUI:
@@ -109,8 +109,9 @@ class AppGUI:
         self.ent_nama.pack(fill=tk.X, ipady=4, pady=(0, 8))
 
         tk.Label(form_frame, text="Ruangan:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).pack(anchor=tk.W, pady=(2, 2))
-        self.ent_ruang = tk.Entry(form_frame, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
-        self.ent_ruang.pack(fill=tk.X, ipady=4, pady=(0, 8))
+        self.cb_ruang = ttk.Combobox(form_frame, values=VALID_ROOMS, state="readonly", font=("Segoe UI", 10))
+        self.cb_ruang.set('E101')
+        self.cb_ruang.pack(fill=tk.X, pady=(0, 8))
 
         tk.Label(form_frame, text="Hari:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).pack(anchor=tk.W, pady=(2, 2))
         self.cb_hari = ttk.Combobox(form_frame, values=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'], state="readonly", font=("Segoe UI", 10))
@@ -503,7 +504,7 @@ Analisis Kompleksitas Waktu:
     # --- Aksi Tombol ---
     def add_class_gui(self):
         nama = self.ent_nama.get().strip()
-        ruangan = self.ent_ruang.get().strip().upper()
+        ruangan = self.cb_ruang.get()
         hari = self.cb_hari.get()
         jam_mulai = self.ent_mulai.get().strip()
         jam_selesai = self.ent_selesai.get().strip()
@@ -566,7 +567,7 @@ Analisis Kompleksitas Waktu:
         
         # Reset input form
         self.ent_nama.delete(0, tk.END)
-        self.ent_ruang.delete(0, tk.END)
+        self.cb_ruang.set('E101')
         self.ent_mulai.delete(0, tk.END)
         self.ent_selesai.delete(0, tk.END)
         self.cb_hari.set('Senin')
@@ -704,7 +705,7 @@ Analisis Kompleksitas Waktu:
             return        # Buat Window Toplevel Modal
         edit_win = tk.Toplevel(self.root)
         edit_win.title(f"Edit Jadwal Kelas - {target_class.code}")
-        edit_win.geometry("400x360")
+        edit_win.geometry("450x450")
         edit_win.resizable(False, False)
         edit_win.configure(bg=self.bg_card)
         edit_win.transient(self.root)
@@ -715,8 +716,8 @@ Analisis Kompleksitas Waktu:
         root_y = self.root.winfo_y()
         root_w = self.root.winfo_width()
         root_h = self.root.winfo_height()
-        win_x = root_x + (root_w - 400) // 2
-        win_y = root_y + (root_h - 360) // 2
+        win_x = root_x + (root_w - 450) // 2
+        win_y = root_y + (root_h - 450) // 2
         edit_win.geometry(f"+{win_x}+{win_y}")
 
         # Label Header
@@ -731,38 +732,95 @@ Analisis Kompleksitas Waktu:
         tk.Label(container, text="Mata Kuliah:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=0, column=0, sticky=tk.W, pady=5)
         ent_nama = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
         ent_nama.insert(0, target_class.nama)
-        ent_nama.grid(row=0, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+        ent_nama.grid(row=0, column=1, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
 
         # Ruangan
         tk.Label(container, text="Ruangan:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=1, column=0, sticky=tk.W, pady=5)
-        ent_ruang = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
-        ent_ruang.insert(0, target_class.ruangan)
-        ent_ruang.grid(row=1, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+        cb_ruang = ttk.Combobox(container, values=VALID_ROOMS, state="readonly", font=("Segoe UI", 10))
+        cb_ruang.set(target_class.ruangan)
+        cb_ruang.grid(row=1, column=1, sticky=tk.W+tk.E, padx=(10, 0), ipady=2, pady=5)
 
         # Hari
         tk.Label(container, text="Hari:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=2, column=0, sticky=tk.W, pady=5)
         cb_hari = ttk.Combobox(container, values=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'], state="readonly", font=("Segoe UI", 10))
         cb_hari.set(target_class.hari)
-        cb_hari.grid(row=2, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=2, pady=5)
+        cb_hari.grid(row=2, column=1, sticky=tk.W+tk.E, padx=(10, 0), ipady=2, pady=5)
 
         # Jam Mulai
         tk.Label(container, text="Mulai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=3, column=0, sticky=tk.W, pady=5)
         ent_mulai = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
         ent_mulai.insert(0, target_class.jam_mulai)
-        ent_mulai.grid(row=3, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+        ent_mulai.grid(row=3, column=1, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
 
         # Jam Selesai
         tk.Label(container, text="Selesai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=4, column=0, sticky=tk.W, pady=5)
         ent_selesai = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
         ent_selesai.insert(0, target_class.jam_selesai)
-        ent_selesai.grid(row=4, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+        ent_selesai.grid(row=4, column=1, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+
+        # --- Gunakan Saran Jadwal Alternatif ---
+        tk.Label(container, text="Gunakan Saran:", bg=self.bg_card, fg=self.color_info, font=("Segoe UI", 9, "bold")).grid(row=5, column=0, sticky=tk.W, pady=10)
+        
+        # Hitung saran alternatif
+        accepted_for_sug = self.accepted if self.is_optimized else greedy_schedule(self.classes)[0]
+        suggestions = get_schedule_suggestions(target_class, self.classes, accepted_for_sug)
+        
+        combobox_values = ["-- Pilih Saran Jadwal --"]
+        suggestion_data = {}
+        
+        import re
+        for item in suggestions.get('alt_rooms', []):
+            match = re.search(r"Ruang '([^']+)'", item)
+            if match:
+                r_name = match.group(1)
+                display = f"Ruang: {r_name} (Hari & Waktu tetap)"
+                combobox_values.append(display)
+                suggestion_data[display] = (r_name, target_class.hari, target_class.jam_mulai, target_class.jam_selesai)
+                
+        for t_slot in suggestions.get('alt_times', []):
+            parts = t_slot.split('-')
+            if len(parts) == 2:
+                display = f"Waktu: {t_slot} (Ruang & Hari tetap)"
+                combobox_values.append(display)
+                suggestion_data[display] = (target_class.ruangan, target_class.hari, parts[0], parts[1])
+                
+        for day in suggestions.get('alt_days', []):
+            display = f"Hari: {day} (Ruang & Waktu tetap)"
+            combobox_values.append(display)
+            suggestion_data[display] = (target_class.ruangan, day, target_class.jam_mulai, target_class.jam_selesai)
+            
+        cb_saran = ttk.Combobox(container, values=combobox_values, state="readonly", font=("Segoe UI", 9))
+        cb_saran.set("-- Pilih Saran Jadwal --")
+        cb_saran.grid(row=5, column=1, sticky=tk.W+tk.E, padx=(10, 0), ipady=2, pady=10)
+        
+        lbl_status_saran = tk.Label(container, text="", bg=self.bg_card, fg=self.color_success, font=("Segoe UI", 8, "italic"))
+        lbl_status_saran.grid(row=6, column=1, sticky=tk.W, padx=(10, 0))
+
+        def apply_saran(event):
+            selected = cb_saran.get()
+            if selected in suggestion_data:
+                r_val, h_val, m_val, s_val = suggestion_data[selected]
+                # Tulis ulang kolom input
+                cb_ruang.set(r_val)
+                cb_hari.set(h_val)
+                ent_mulai.delete(0, tk.END)
+                ent_mulai.insert(0, m_val)
+                ent_selesai.delete(0, tk.END)
+                ent_selesai.insert(0, s_val)
+                
+                lbl_status_saran.config(text="✓ Saran jadwal berhasil diterapkan!")
+            else:
+                lbl_status_saran.config(text="")
+                
+        cb_saran.bind("<<ComboboxSelected>>", apply_saran)
 
         # Konfigurasi grid weight agar Entry memanjang
         container.grid_columnconfigure(1, weight=1)
 
+
         def save_changes():
             nama_val = ent_nama.get().strip()
-            ruang_val = ent_ruang.get().strip().upper()
+            ruang_val = cb_ruang.get()
             hari_val = cb_hari.get()
             mulai_val = ent_mulai.get().strip()
             selesai_val = ent_selesai.get().strip()

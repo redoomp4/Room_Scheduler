@@ -4,7 +4,7 @@ test_scheduler.py - Unit Test Sederhana
 ========================================
 Skrip ini memverifikasi bahwa Algoritma Greedy (Activity Selection) berjalan
 dengan benar dan menjamin tidak ada jadwal kuliah yang tumpang tindih (overlap)
-pada ruangan yang sama, serta memverifikasi fungsi rekomendasi saran jadwal.
+pada ruangan yang sama dan hari yang sama, serta memverifikasi fungsi rekomendasi saran jadwal.
 """
 
 from engine import get_dummy_data, greedy_schedule, get_schedule_suggestions
@@ -17,15 +17,16 @@ def test_no_overlap():
     # 1. Pastikan seluruh kelas terdaftar
     assert len(accepted) + len(conflicted) == len(classes), "Total kelas tidak cocok!"
     
-    # 2. Kelompokkan kelas yang diterima berdasarkan ruangan
-    rooms_schedule = {}
+    # 2. Kelompokkan kelas yang diterima berdasarkan (ruangan, hari)
+    rooms_days_schedule = {}
     for c in accepted:
-        if c.ruangan not in rooms_schedule:
-            rooms_schedule[c.ruangan] = []
-        rooms_schedule[c.ruangan].append(c)
+        key = (c.ruangan, c.hari)
+        if key not in rooms_days_schedule:
+            rooms_days_schedule[key] = []
+        rooms_days_schedule[key].append(c)
         
-    # 3. Periksa bentrok/overlapping untuk setiap ruangan
-    for room, room_classes in rooms_schedule.items():
+    # 3. Periksa bentrok/overlapping untuk setiap ruangan pada hari yang sama
+    for (room, day), room_classes in rooms_days_schedule.items():
         # Urutkan berdasarkan waktu mulai untuk pengecekan sekuensial
         room_classes.sort(key=lambda x: x.mulai_menit)
         
@@ -35,7 +36,7 @@ def test_no_overlap():
             
             # Waktu mulai kelas kedua harus >= waktu selesai kelas pertama
             assert c2.mulai_menit >= c1.selesai_menit, (
-                f"BENTROK TERDETEKSI pada {room}: "
+                f"BENTROK TERDETEKSI pada {room} hari {day}: "
                 f"'{c1.nama}' ({c1.jam_mulai}-{c1.jam_selesai}) "
                 f"dan '{c2.nama}' ({c2.jam_mulai}-{c2.jam_selesai})"
             )
@@ -61,10 +62,11 @@ def test_schedule_suggestions():
     assert isinstance(suggestions, dict), "Output harus berupa dictionary!"
     assert 'alt_rooms' in suggestions, "Kunci 'alt_rooms' tidak ditemukan!"
     assert 'alt_times' in suggestions, "Kunci 'alt_times' tidak ditemukan!"
+    assert 'alt_days' in suggestions, "Kunci 'alt_days' tidak ditemukan!"
     
-    # C02 (08:00-10:00) bentrok di AULA. 
-    # Di AULA (setelah C05 selesai pukul 13:00), harusnya ada slot kosong
-    assert len(suggestions['alt_times']) > 0, "Saran slot waktu di AULA harus tersedia!"
+    # C02 (08:00-10:00) bentrok di Lab Kom 2 hari Senin.
+    # Di Lab Kom 2 (setelah C03 selesai pukul 11:00), harusnya ada slot kosong
+    assert len(suggestions['alt_times']) > 0, "Saran slot waktu di Lab Kom 2 harus tersedia!"
     
     print("[v] Sukses: Pengujian Saran Jadwal Berhasil!")
     print("    Saran Ruangan Lain untuk C02:")
@@ -73,9 +75,13 @@ def test_schedule_suggestions():
     print("    Saran Waktu Lain untuk C02:")
     for t in suggestions['alt_times']:
         print(f"      - {t}")
+    print("    Saran Hari Lain untuk C02:")
+    for d in suggestions['alt_days']:
+        print(f"      - Pindah ke hari {d}")
 
 
 if __name__ == "__main__":
     test_no_overlap()
     print("-" * 50)
     test_schedule_suggestions()
+
