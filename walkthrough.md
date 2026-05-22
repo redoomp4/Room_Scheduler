@@ -9,10 +9,10 @@ Proyek ini adalah implementasi lengkap solusi optimasi penjadwalan ruangan mengg
 Proyek ini terbagi menjadi 5 file utama:
 
 1. 📂 **[main.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/main.py)**: Berperan sebagai pintu masuk program. Menyediakan menu pembuka untuk memilih antarmuka CLI atau GUI.
-2. ⚙️ **[engine.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/engine.py)**: Berisi representasi objek data kelas (`Kuliah`), data dummy, logika utama **Algoritma Greedy**, dan utilitas ekspor file.
-3. 🖥️ **[cli_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/cli_interface.py)**: Mengelola visualisasi menu CLI, input data terminal dengan validasi ketat, cetak tabel ASCII, serta aksi pencarian dan penghapusan.
-4. 🎨 **[gui_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/gui_interface.py)**: Antarmuka GUI desktop berbasis `Tkinter` (Dark Mode) untuk memvisualisasikan linimasa jadwal kuliah secara interaktif dengan fitur filter real-time dan klik detail.
-5. 🧪 **[test_scheduler.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/test_scheduler.py)**: File skrip pengujian otomatis (unit test) untuk memverifikasi logika kebenaran bebas bentrok.
+2. ⚙️ **[engine.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/engine.py)**: Berisi representasi objek data kelas (`Kuliah`), data dummy, logika utama **Algoritma Greedy**, fungsi pencarian **saran jadwal alternatif** (`get_schedule_suggestions`), dan utilitas ekspor file.
+3. 🖥️ **[cli_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/cli_interface.py)**: Mengelola visualisasi menu CLI, input data terminal dengan validasi ketat, cetak tabel ASCII, aksi pencarian, penghapusan, pengeditan jadwal, serta penyajian rekomendasi alternatif untuk jadwal bentrok.
+4. 🎨 **[gui_interface.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/gui_interface.py)**: Antarmuka GUI desktop berbasis `Tkinter` (Dark Mode) untuk memvisualisasikan linimasa jadwal kuliah secara interaktif. Menyertakan indikator warna dinamis, layout visual tumpang tindih terbagi, dialog form pengeditan modal, dan popup rekomendasi.
+5. 🧪 **[test_scheduler.py](file:///d:/Kuliah ITK/Materi Kuliah Semester 4/PAA/Tubes/test_scheduler.py)**: File skrip pengujian otomatis (unit test) untuk memverifikasi logika kebenaran bebas bentrok dan fungsi saran jadwal alternatif.
 
 ---
 
@@ -33,17 +33,18 @@ graph TD
     F -- "3. Cari & Filter" --> C3[Filter Nama / Ruangan] --> C
     F -- "4. Hapus Jadwal" --> C4[Hapus berdasarkan Kode Kelas] --> C
     F -- "5. Optimasi Greedy" --> C5[Kelompokkan -> Sortir -> Seleksi] --> C
-    F -- "6. Lihat Hasil" --> C6[Tampilkan Jadwal Diterima & Bentrok] --> C
+    F -- "6. Lihat Hasil" --> C6[Tampilkan Jadwal Diterima & Bentrok + Saran Alternatif] --> C
     F -- "7. Ekspor File" --> C7[Ekspor hasil ke txt] --> C
     F -- "8. Muat Dummy" --> C8[Muat Ulang 14 Data Dummy] --> C
     F -- "9. Reset" --> C9[Kosongkan Data] --> C
     F -- "10. Edukasi" --> C10[Tampilkan Teori & Kompleksitas] --> C
-    F -- "11. Kembali" --> B
+    F -- "11. Edit Jadwal" --> C11[Edit nama/ruang/waktu kelas] --> C
+    F -- "12. Kembali" --> B
     
     D --> G[Tampilan Utama GUI]
     G --> G1[Form Tambah Jadwal Baru]
-    G --> G2[Visualisasi Timeline Real-Time dengan Klik Detail]
-    G --> G3[Tabel Status Kelas dengan Live Search & Hapus]
+    G --> G2[Visualisasi Timeline Real-Time dengan Klik Detail & Saran Alternatif]
+    G --> G3[Tabel Status Kelas dengan Live Search, Hapus, & Edit]
     G --> G4[Tombol Jalankan Optimasi & Ekspor Laporan]
     G4 --> C5
     G3 --> G
@@ -51,21 +52,33 @@ graph TD
 
 ---
 
-## 🌟 Fitur Baru Interaktif (Tahap 2)
+## 🌟 Fitur Baru Interaktif (Tahap 3)
 
-Untuk meningkatkan fungsionalitas dan pengalaman pengguna yang dinamis, kami telah menambahkan fitur interaktif berikut:
+Untuk meningkatkan fungsionalitas dan pengalaman pengguna yang dinamis, kami telah menambahkan fitur-fitur interaktif tingkat lanjut berikut:
 
-1. **Hapus Jadwal Tertentu**:
-   - **CLI (Menu 4)**: Pengguna dapat menghapus kelas tertentu dengan memasukkan kode kelas (misal: `C01`).
-   - **GUI**: Pengguna cukup memilih baris jadwal pada tabel, lalu menekan tombol **"Hapus Kelas Terpilih"**. Jadwal visual dan status optimasi akan diperbarui secara otomatis.
-2. **Cari & Filter Real-Time**:
-   - **CLI (Menu 3)**: Memungkinkan pencarian data kelas secara spesifik berdasarkan nama mata kuliah atau ruangan.
-   - **GUI**: Penambahan kolom **"Cari/Filter Kelas"** di atas tabel. Data pada tabel Treeview akan otomatis menyaring saat pengguna mengetik (filter berdasarkan nama kelas, ruangan, atau kode secara real-time).
-3. **Ekspor Hasil Laporan**:
-   - **CLI (Menu 7) & GUI (Tombol Ekspor Laporan)**: Menyimpan hasil optimasi (diterima & bentrok) ke berkas teks eksternal (default: `hasil_optimasi.txt`) dengan format yang rapi dan profesional untuk kebutuhan pelaporan tugas besar.
-4. **Klik Detail Jadwal di Timeline (GUI)**:
-   - Kotak jadwal pada timeline Canvas kini dapat diklik menggunakan mouse kiri.
-   - Aplikasi akan mendeteksi klik tersebut dan memunculkan pop-up dialog rincian informasi kelas lengkap (Kode, Nama, Ruangan, Jam, Durasi dalam jam/menit, dan Status kelulusan optimasi).
+1. **Hapus & Edit Jadwal**:
+   - **CLI (Menu 4 & 11)**: Pengguna dapat menghapus kelas tertentu dengan kode kelas. Fitur edit (Menu 11) memungkinkan pembaruan nama kelas, ruangan, dan jam dengan pre-fill nilai lama (tekan Enter untuk mempertahankan nilai lama) dan validasi otomatis.
+   - **GUI**: Pengguna cukup memilih baris jadwal pada tabel, lalu menekan tombol **"Hapus Kelas Terpilih"** atau **"Edit Kelas Terpilih"**. Tombol Edit akan memunculkan dialog form modal berlatar gelap yang divalidasi secara ketat. Jadwal visual dan status optimasi otomatis di-reset saat data berubah.
+
+2. **Indikator Visual Warna Hijau/Merah**:
+   - **Tabel Treeview**: Baris kelas yang lolos optimasi (Diterima) diwarnai hijau gelap (`#1a3d2b`), baris kelas yang bentrok (Ditolak) diwarnai merah gelap (`#3d1b1d`), dan baris baru diwarnai abu-abu gelap.
+   - **Timeline Canvas**: Kotak kelas diterima diwarnai hijau terang (`#2ECC71`) dan kelas bentrok diwarnai merah terang (`#E74C3C`).
+
+3. **Layout Tumpang Tindih Terbagi secara Vertikal**:
+   - Pada visualisasi timeline mode "Tampilkan Semua Pengajuan (Tumpang Tindih)" setelah optimasi, kelas diterima akan digambar di paruh atas baris ruangan, sedangkan kelas bentrok akan digambar di paruh bawah baris ruangan dengan ketebalan yang lebih tipis. Ini memberikan gambaran visual yang sangat jelas tentang konflik jadwal.
+
+4. **Saran Jadwal Alternatif Otomatis**:
+   - **Analisis Cerdas**: Sistem menganalisis ketersediaan waktu operasional (07:00 - 20:00) dan ruangan lain untuk memberikan dua saran konkret kepada pengguna:
+     1. *Alternatif Ruangan*: Ruangan lain yang kosong pada slot waktu yang sama.
+     2. *Alternatif Waktu*: Slot kosong di ruangan yang sama dengan durasi kelas yang sesuai.
+   - **CLI**: Ditampilkan langsung di bawah tabel kelas bentrok.
+   - **GUI**: Ditampilkan secara otomatis di dalam dialog detail saat pengguna mengeklik kotak kelas bentrok (merah) pada timeline Canvas.
+
+5. **Cari & Filter Real-Time**:
+   - Kolom filter di atas tabel menyaring data tabel Treeview secara real-time saat mengetik.
+
+6. **Ekspor Hasil Laporan**:
+   - Menyimpan hasil optimasi (diterima & bentrok) ke berkas teks eksternal.
 
 ---
 
@@ -74,7 +87,7 @@ Untuk meningkatkan fungsionalitas dan pengalaman pengguna yang dinamis, kami tel
 Strategi greedy yang digunakan adalah **memilih kelas yang selesai paling cepat terlebih dahulu** (*earliest finish time first*).
 
 ### Rationale (Mengapa strategi ini optimal?)
-Jika kita memilih kelas yang selesai lebih awal, ruangan akan dibebaskan secepat mungkin. Ruangan yang cepat kosong memiliki sisa waktu maksimum untuk diisi oleh kelas-kelas berikutnya. Hal ini dibuktikan secara matematis selalu menghasilkan jumlah kelas yang dijadwalkan secara maksimal dalam suatu ruangan.
+Jika kita memilih kelas yang selesai lebih awal, ruangan akan dibebaskan secepat mungkin. Ruangan yang cepat kosong memiliki sisa waktu maksimum untuk diisi oleh kelas-kelas berikutnya. Hal ini terbukti secara matematis selalu menghasilkan jumlah kelas yang dijadwalkan secara maksimal dalam suatu ruangan.
 
 ### Langkah-Langkah Algoritma:
 1. **Pengelompokkan per Ruangan**:
@@ -108,7 +121,7 @@ Algoritma ini memiliki kompleksitas keseluruhan sebesar **$O(n \log n)$**. Berik
 $$T(n) = O(n) + O(n \log n) + O(n) = \mathbf{O(n \log n)}$$
 
 ### 2. Kompleksitas Ruang:
-- Menyimpan dictionary ruangan dan list hasil optimasi membutuhkan ruang memori tambahan sebesar **$O(n)$**.
+- Menyimpan dictionary ruangan, daftar saran, dan list hasil optimasi membutuhkan ruang memori tambahan sebesar **$O(n)$**.
 
 ---
 
@@ -159,6 +172,12 @@ Ketika skrip `test_scheduler.py` dijalankan, hasilnya adalah:
     - Total Pengajuan: 14 kelas
     - Berhasil dijadwalkan secara optimal: 9 kelas
     - Bentrok disaring: 5 kelas
+--------------------------------------------------
+[...] Menjalankan pengujian saran jadwal alternatif...
+[v] Sukses: Pengujian Saran Jadwal Berhasil!
+    Saran Ruangan Lain untuk C02:
+    Saran Waktu Lain untuk C02:
+      - Ruang 'AULA' pukul 13:00-15:00 (slot tersedia)
 ```
 
-Ini membuktikan bahwa logika greedy yang ditulis berhasil mengeliminasi seluruh overlap jadwal kelas di setiap ruangan dengan sukses dan memberikan hasil yang optimal secara matematis.
+Ini membuktikan bahwa logika greedy yang ditulis berhasil mengeliminasi seluruh overlap jadwal kelas di setiap ruangan dengan sukses dan memberikan hasil yang optimal secara matematis, serta fungsi rekomendasi cerdas berjalan dengan akurat.

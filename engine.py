@@ -244,3 +244,100 @@ def export_schedule_to_file(filepath, classes, accepted, conflicted):
         f.write("=================================================================\n")
         f.write("Laporan dibuat secara otomatis oleh Sistem Penjadwalan Greedy.\n")
 
+
+def get_schedule_suggestions(target_class, all_classes, accepted_classes):
+    """
+    Mencari saran jadwal alternatif untuk sebuah kelas yang bentrok.
+    Mengembalikan dua jenis saran:
+      1. Alternatif Ruangan: Ruangan lain di mana slot waktu yang SAMA tersedia.
+      2. Alternatif Waktu: Slot waktu kosong di ruangan yang SAMA.
+
+    Args:
+        target_class: Objek Kuliah yang bentrok.
+        all_classes (list): Seluruh daftar kelas yang diajukan.
+        accepted_classes (list): Daftar kelas yang sudah diterima oleh greedy.
+
+    Returns:
+        dict: {
+            'alt_rooms': list[str]  -> saran ruangan alternatif,
+            'alt_times': list[str]  -> saran slot waktu alternatif di ruangan yang sama
+        }
+    """
+    durasi = target_class.selesai_menit - target_class.mulai_menit
+
+    # --- Kelompokkan kelas yang DITERIMA berdasarkan ruangan ---
+    accepted_by_room = {}
+    for c in accepted_classes:
+        if c.ruangan not in accepted_by_room:
+            accepted_by_room[c.ruangan] = []
+        accepted_by_room[c.ruangan].append(c)
+
+    # Ambil semua nama ruangan unik dari seluruh pengajuan
+    all_rooms = sorted(set(c.ruangan for c in all_classes))
+
+    # ----------------------------------------------------------------
+    # Saran 1: Ruangan Alternatif (waktu yang sama, ruangan berbeda)
+    # Periksa apakah slot [mulai, selesai] target_class kosong di ruangan lain
+    # ----------------------------------------------------------------
+    alt_rooms = []
+    for room in all_rooms:
+        if room == target_class.ruangan:
+            continue  # Skip ruangan asal
+
+        occupied = accepted_by_room.get(room, [])
+        # Cek apakah kelas target bisa masuk ke ruangan ini tanpa bentrok
+        can_fit = True
+        for c in occupied:
+            # Overlap jika: mulai target < selesai c AND selesai target > mulai c
+            if target_class.mulai_menit < c.selesai_menit and target_class.selesai_menit > c.mulai_menit:
+                can_fit = False
+                break
+        if can_fit:
+            alt_rooms.append(
+                f"Ruang '{room}' pada {target_class.jam_mulai}-{target_class.jam_selesai} (kosong)"
+            )
+
+    # ----------------------------------------------------------------
+    # Saran 2: Waktu Alternatif (ruangan yang sama, waktu berbeda)
+    # Cari slot kosong di ruangan asal dengan durasi yang cukup.
+    # Kandidat slot: setelah setiap kelas yang diterima di ruangan itu,
+    # dan sebelum kelas pertama jika ada ruang di sana.
+    # ----------------------------------------------------------------
+    alt_times = []
+    same_room_accepted = sorted(
+        accepted_by_room.get(target_class.ruangan, []),
+        key=lambda x: x.mulai_menit
+    )
+
+    # Rentang jam operasional kampus: 07:00 - 20:00
+    ops_start = 7 * 60   # 420 menit
+    ops_end   = 20 * 60  # 1200 menit
+
+    # Kumpulkan batas-batas slot yang sudah terpakai → [(mulai, selesai), ...]
+    occupied_slots = [(c.mulai_menit, c.selesai_menit) for c in same_room_accepted]
+    occupied_slots.sort()
+
+    # Bangun daftar "gap" kosong dalam jam operasional
+    gaps = []
+    prev_end = ops_start
+    for (s, e) in occupied_slots:
+        if s > prev_end:
+            gaps.append((prev_end, s))
+        prev_end = max(prev_end, e)
+    if prev_end < ops_end:
+        gaps.append((prev_end, ops_end))
+
+    # Cari gap yang cukup untuk menampung kelas dengan durasi yang dibutuhkan
+    MAX_SUGGESTIONS = 3
+    for (gap_start, gap_end) in gaps:
+        if gap_end - gap_start >= durasi:
+            slot_mulai = gap_start
+            slot_selesai = gap_start + durasi
+            alt_times.append(
+                f"Ruang '{target_class.ruangan}' pukul "
+                f"{minutes_to_str(slot_mulai)}-{minutes_to_str(slot_selesai)} (slot tersedia)"
+            )
+            if len(alt_times) >= MAX_SUGGESTIONS:
+                break
+
+    return {'alt_rooms': alt_rooms, 'alt_times': alt_times}

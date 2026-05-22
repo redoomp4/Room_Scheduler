@@ -9,7 +9,7 @@ penambahan data lewat form, dan grafik status optimasi (Diterima vs Bentrok).
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, minutes_to_str, export_schedule_to_file
+from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, minutes_to_str, export_schedule_to_file, get_schedule_suggestions
 
 
 class AppGUI:
@@ -247,6 +247,11 @@ class AppGUI:
 
         self.tree_classes.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
+        # Konfigurasi warna baris tabel
+        self.tree_classes.tag_configure("accepted", background="#1a3d2b", foreground="#2ECC71")
+        self.tree_classes.tag_configure("conflicted", background="#3d1b1d", foreground="#E74C3C")
+        self.tree_classes.tag_configure("pending", background="#1A1A1E", foreground="#F8F8F2")
+
         # Scrollbar untuk Treeview
         scroll = ttk.Scrollbar(self.tree_classes, orient=tk.VERTICAL, command=self.tree_classes.yview)
         self.tree_classes.configure(yscrollcommand=scroll.set)
@@ -258,6 +263,9 @@ class AppGUI:
 
         btn_delete_sel = tk.Button(tbl_btn_frame, text="Hapus Kelas Terpilih", bg=self.color_danger, fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground="#c0392b", activeforeground=self.fg_white, command=self.delete_selected_gui)
         btn_delete_sel.pack(side=tk.LEFT, ipady=5, ipadx=10, padx=(0, 10))
+
+        btn_edit_sel = tk.Button(tbl_btn_frame, text="Edit Kelas Terpilih", bg=self.color_info, fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground="#2980b9", activeforeground=self.fg_white, command=self.edit_selected_gui)
+        btn_edit_sel.pack(side=tk.LEFT, ipady=5, ipadx=10, padx=(0, 10))
 
         btn_export = tk.Button(tbl_btn_frame, text="Ekspor Laporan (.txt)", bg=self.color_primary, fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground=self.color_primary_hover, activeforeground=self.fg_white, command=self.export_report_gui)
         btn_export.pack(side=tk.LEFT, ipady=5, ipadx=10)
@@ -411,32 +419,40 @@ Analisis Kompleksitas Waktu:
                 
                 # Koordinat Y (buat box berada di tengah baris ruangan)
                 box_h = min(row_height * 0.7, 40)
-                y1 = y_mid - (box_h / 2)
-                y2 = y_mid + (box_h / 2)
                 
-                # Menentukan warna box berdasarkan status optimasi
-                if mode == "optimal" and self.is_optimized:
-                    if c in self.accepted:
-                        color = self.color_success
+                if self.is_optimized:
+                    if mode == "optimal":
+                        if c in self.accepted:
+                            y1 = y_mid - (box_h / 2)
+                            y2 = y_mid + (box_h / 2)
+                            color = self.color_success
+                            text_color = "#121214"
+                        else:
+                            # Abaikan kelas yang bentrok dari visualisasi timeline agar bersih
+                            continue
+                    else: # mode == "raw" setelah optimasi: tampilkan kedua kelas (hijau & merah) dengan offset vertikal
+                        if c in self.accepted:
+                            y1 = y_mid - box_h * 0.85
+                            y2 = y_mid - box_h * 0.05
+                            color = self.color_success
+                            text_color = "#121214"
+                        else:
+                            y1 = y_mid + box_h * 0.1
+                            y2 = y_mid + box_h * 0.7
+                            color = self.color_danger
+                            text_color = "#FFFFFF"
+                else: # Belum dioptimasi
+                    y1 = y_mid - (box_h / 2)
+                    y2 = y_mid + (box_h / 2)
+                    if mode == "optimal":
+                        color = "#F1C40F"
                         text_color = "#121214"
-                        dash = None
                     else:
-                        # Abaikan kelas yang bentrok dari visualisasi timeline agar bersih
-                        continue
-                elif mode == "optimal" and not self.is_optimized:
-                    # Belum dioptimasi, warnai netral (kuning/emas)
-                    color = "#F1C40F"
-                    text_color = "#121214"
-                    dash = None
-                else:
-                    # Menampilkan seluruh data mentah (tumpang tindih)
-                    # Warnai biru, jika terdeteksi tumpang tindih secara lokal (belum tentu optimal), tandai
-                    color = self.color_info
-                    text_color = "#FFFFFF"
-                    dash = None
+                        color = self.color_info
+                        text_color = "#FFFFFF"
                 
                 # Gambar rounded rectangle menggunakan canvas
-                rect_id = self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="#333333", width=1, dash=dash)
+                rect_id = self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="#333333", width=1, dash=None)
                 
                 # Batasi teks agar tidak keluar dari kotak jika durasi kelas terlalu singkat
                 rect_width = x2 - x1
@@ -446,10 +462,12 @@ Analisis Kompleksitas Waktu:
                 elif rect_width > 40:
                     display_text = c.nama[:8] + ".."
                 
+                y_box_mid = (y1 + y2) / 2
+                box_height_actual = y2 - y1
                 # Tulis judul mata kuliah di dalam box
-                text_id1 = self.canvas.create_text((x1 + x2)/2, y_mid - 5, text=display_text, fill=text_color, font=("Segoe UI", 8, "bold"))
+                text_id1 = self.canvas.create_text((x1 + x2)/2, y_box_mid - 5, text=display_text, fill=text_color, font=("Segoe UI", 8 if box_height_actual > 25 else 7, "bold"))
                 # Tulis jam di dalam box
-                text_id2 = self.canvas.create_text((x1 + x2)/2, y_mid + 8, text=f"{c.jam_mulai}-{c.jam_selesai}", fill=text_color, font=("Segoe UI", 7))
+                text_id2 = self.canvas.create_text((x1 + x2)/2, y_box_mid + 7, text=f"{c.jam_mulai}-{c.jam_selesai}", fill=text_color, font=("Segoe UI", 7 if box_height_actual > 25 else 6))
                 
                 # Bind klik mouse kiri (Button-1) untuk menampilkan popup detail kelas
                 # Gunakan capture variable default argument `item=c` agar objek terikat dengan benar
@@ -553,12 +571,15 @@ Analisis Kompleksitas Waktu:
         for c in sorted(self.classes, key=lambda x: (x.ruangan, x.mulai_menit)):
             if not keyword or keyword in c.nama.lower() or keyword in c.ruangan.lower() or keyword in c.code.lower():
                 status = "Menunggu Optimasi"
+                row_tag = "pending"
                 if self.is_optimized:
                     if c in self.accepted:
                         status = "Diterima"
+                        row_tag = "accepted"
                     else:
                         status = "Bentrok (Ditolak)"
-                self.tree_classes.insert("", tk.END, values=(c.code, c.nama, c.ruangan, c.jam_mulai, c.jam_selesai, status))
+                        row_tag = "conflicted"
+                self.tree_classes.insert("", tk.END, values=(c.code, c.nama, c.ruangan, c.jam_mulai, c.jam_selesai, status), tags=(row_tag,))
 
     def delete_selected_gui(self):
         """Menghapus jadwal kuliah yang dipilih pada tabel Treeview."""
@@ -589,6 +610,127 @@ Analisis Kompleksitas Waktu:
                 self.update_ui()
                 messagebox.showinfo("Hapus Berhasil", f"Kelas '{target_class.nama}' berhasil dihapus.")
 
+    def edit_selected_gui(self):
+        """Membuka dialog modal untuk mengedit kelas yang dipilih pada tabel."""
+        selected_item = self.tree_classes.selection()
+        if not selected_item:
+            messagebox.showwarning("Peringatan", "Pilih baris pada tabel terlebih dahulu untuk mengedit!")
+            return
+            
+        values = self.tree_classes.item(selected_item[0], "values")
+        if not values:
+            return
+        code = values[0]
+        
+        target_class = None
+        for c in self.classes:
+            if c.code == code:
+                target_class = c
+                break
+                
+        if not target_class:
+            return
+
+        # Buat Window Toplevel Modal
+        edit_win = tk.Toplevel(self.root)
+        edit_win.title(f"Edit Jadwal Kelas - {target_class.code}")
+        edit_win.geometry("400x320")
+        edit_win.resizable(False, False)
+        edit_win.configure(bg=self.bg_card)
+        edit_win.transient(self.root)
+        edit_win.grab_set()
+
+        # Letakkan window di tengah screen relatif ke root
+        root_x = self.root.winfo_x()
+        root_y = self.root.winfo_y()
+        root_w = self.root.winfo_width()
+        root_h = self.root.winfo_height()
+        win_x = root_x + (root_w - 400) // 2
+        win_y = root_y + (root_h - 320) // 2
+        edit_win.geometry(f"+{win_x}+{win_y}")
+
+        # Label Header
+        lbl_title = tk.Label(edit_win, text=f"Edit Kelas {target_class.code}", bg=self.bg_card, fg=self.color_primary, font=("Segoe UI", 12, "bold"))
+        lbl_title.pack(pady=(15, 15))
+
+        # Container Frame
+        container = tk.Frame(edit_win, bg=self.bg_card, padx=20)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        # Nama Matkul
+        tk.Label(container, text="Mata Kuliah:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=0, column=0, sticky=tk.W, pady=5)
+        ent_nama = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
+        ent_nama.insert(0, target_class.nama)
+        ent_nama.grid(row=0, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+
+        # Ruangan
+        tk.Label(container, text="Ruangan:", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=1, column=0, sticky=tk.W, pady=5)
+        ent_ruang = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
+        ent_ruang.insert(0, target_class.ruangan)
+        ent_ruang.grid(row=1, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+
+        # Jam Mulai
+        tk.Label(container, text="Mulai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=2, column=0, sticky=tk.W, pady=5)
+        ent_mulai = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
+        ent_mulai.insert(0, target_class.jam_mulai)
+        ent_mulai.grid(row=2, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+
+        # Jam Selesai
+        tk.Label(container, text="Selesai (HH:MM):", bg=self.bg_card, fg=self.fg_white, font=("Segoe UI", 9)).grid(row=3, column=0, sticky=tk.W, pady=5)
+        ent_selesai = tk.Entry(container, bg=self.bg_input, fg=self.fg_white, insertbackground=self.fg_white, bd=0, font=("Segoe UI", 10))
+        ent_selesai.insert(0, target_class.jam_selesai)
+        ent_selesai.grid(row=3, column=1, fill=tk.X, sticky=tk.W+tk.E, padx=(10, 0), ipady=4, pady=5)
+
+        # Konfigurasi grid weight agar Entry memanjang
+        container.grid_columnconfigure(1, weight=1)
+
+        def save_changes():
+            nama_val = ent_nama.get().strip()
+            ruang_val = ent_ruang.get().strip().upper()
+            mulai_val = ent_mulai.get().strip()
+            selesai_val = ent_selesai.get().strip()
+
+            if not nama_val or not ruang_val or not mulai_val or not selesai_val:
+                messagebox.showerror("Error Input", "Semua kolom wajib diisi!", parent=edit_win)
+                return
+
+            try:
+                m_mulai = parse_time(mulai_val)
+                m_selesai = parse_time(selesai_val)
+                if m_mulai >= m_selesai:
+                    messagebox.showerror("Error Input", "Jam selesai harus setelah jam mulai!", parent=edit_win)
+                    return
+            except ValueError as e:
+                messagebox.showerror("Error Input", str(e), parent=edit_win)
+                return
+
+            # Simpan perubahan
+            target_class.nama = nama_val
+            target_class.ruangan = ruang_val
+            target_class.jam_mulai = mulai_val
+            target_class.jam_selesai = selesai_val
+            target_class.mulai_menit = m_mulai
+            target_class.selesai_menit = m_selesai
+
+            # Reset optimasi
+            self.is_optimized = False
+            self.accepted.clear()
+            self.conflicted.clear()
+
+            self.update_ui()
+            edit_win.destroy()
+            messagebox.showinfo("Sukses", f"Kelas '{target_class.nama}' ({target_class.code}) berhasil diperbarui.")
+
+        # Tombol aksi
+        btn_frame = tk.Frame(edit_win, bg=self.bg_card, pady=15)
+        btn_frame.pack(fill=tk.X)
+
+        btn_cancel = tk.Button(btn_frame, text="Batal", bg=self.color_danger, fg=self.fg_white, font=("Segoe UI", 9, "bold"), bd=0, activebackground="#c0392b", activeforeground=self.fg_white, command=edit_win.destroy, width=10)
+        btn_cancel.pack(side=tk.RIGHT, padx=(10, 20), ipady=4)
+
+        btn_save = tk.Button(btn_frame, text="Simpan", bg=self.color_success, fg="#121214", font=("Segoe UI", 9, "bold"), bd=0, activebackground="#27ae60", activeforeground="#121214", command=save_changes, width=10)
+        btn_save.pack(side=tk.RIGHT, ipady=4)
+
     def export_report_gui(self):
         """Mengekspor laporan optimasi ke berkas teks via dialog file."""
         if not self.is_optimized:
@@ -616,8 +758,13 @@ Analisis Kompleksitas Waktu:
         duration_str = f"{hours} jam" + (f" {mins} menit" if mins > 0 else "")
         
         status = "Menunggu Optimasi"
+        is_conflicted = False
         if self.is_optimized:
-            status = "Diterima (Optimal)" if item in self.accepted else "Bentrok (Ditolak)"
+            if item in self.accepted:
+                status = "Diterima (Optimal)"
+            else:
+                status = "Bentrok (Ditolak)"
+                is_conflicted = True
             
         detail_msg = (
             f"=== RINCIAN JADWAL KULIAH ===\n\n"
@@ -629,6 +776,25 @@ Analisis Kompleksitas Waktu:
             f"• Durasi Kelas    : {duration_str}\n"
             f"• Status Jadwal   : {status}"
         )
+        
+        if is_conflicted:
+            suggestions = get_schedule_suggestions(item, self.classes, self.accepted)
+            alt_rooms = suggestions['alt_rooms']
+            alt_times = suggestions['alt_times']
+            
+            sug_text = "\n\n=== SARAN JADWAL ALTERNATIF ==="
+            if alt_rooms:
+                sug_text += "\n\nSaran Ruangan Lain (Jam Sama):"
+                for s in alt_rooms:
+                    sug_text += f"\n  * {s}"
+            if alt_times:
+                sug_text += "\n\nSaran Waktu Lain (Ruangan Sama):"
+                for s in alt_times:
+                    sug_text += f"\n  * {s}"
+            if not alt_rooms and not alt_times:
+                sug_text += "\n\nTidak ditemukan saran alternatif otomatis."
+            detail_msg += sug_text
+
         messagebox.showinfo("Detail Informasi Kelas", detail_msg)
 
 def launch_gui(classes):

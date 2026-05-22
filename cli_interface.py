@@ -8,7 +8,7 @@ Dilengkapi dengan visualisasi tabel ASCII dan validasi input yang ketat.
 """
 
 import os
-from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, export_schedule_to_file
+from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, export_schedule_to_file, get_schedule_suggestions
 
 
 def clear_screen():
@@ -141,7 +141,7 @@ def run_optimization_cli(classes):
     input("\nTekan Enter untuk melihat hasil rincian...")
     return accepted, conflicted
 
-def view_optimization_results_cli(accepted, conflicted):
+def view_optimization_results_cli(classes, accepted, conflicted):
     """Menampilkan hasil akhir optimasi penjadwalan."""
     clear_screen()
     print_header("HASIL OPTIMASI RUANGAN (DITERIMA - OPTIMAL)")
@@ -160,6 +160,28 @@ def view_optimization_results_cli(accepted, conflicted):
         rows = format_class_rows(conflicted)
         print_table(headers, rows)
         print("\n> [NOTE] Kelas di atas bentrok dengan kelas lain yang selesai lebih awal.")
+        
+        # Tampilkan saran jadwal alternatif per kelas bentrok
+        print("\n" + "-"*65)
+        print("SARAN JADWAL ALTERNATIF UNTUK KELAS BENTROK:".center(65))
+        print("-"*65)
+        for c in conflicted:
+            suggestions = get_schedule_suggestions(c, classes, accepted)
+            alt_rooms = suggestions['alt_rooms']
+            alt_times = suggestions['alt_times']
+            
+            print(f"\n[!] Kelas: {c.nama} ({c.code}) di {c.ruangan} ({c.jam_mulai}-{c.jam_selesai})")
+            if not alt_rooms and not alt_times:
+                print("    -> Tidak ditemukan saran alternatif otomatis.")
+            else:
+                if alt_rooms:
+                    print("    Saran Ruangan Lain (Jam Sama):")
+                    for r_sug in alt_rooms:
+                        print(f"      * {r_sug}")
+                if alt_times:
+                    print("    Saran Waktu Lain (Ruangan Sama):")
+                    for t_sug in alt_times:
+                        print(f"      * {t_sug}")
     else:
         print("[v] Luar biasa! Tidak ada jadwal yang bentrok.")
 
@@ -262,6 +284,68 @@ def delete_schedule_cli(classes):
         print(f"\n[x] Error: Kelas dengan kode '{code_to_delete}' tidak ditemukan.")
     input("\nTekan Enter...")
 
+
+def edit_schedule_cli(classes):
+    """Mengedit jadwal kuliah tertentu berdasarkan kode kelas."""
+    print_header("EDIT JADWAL KULIAH")
+    if not classes:
+        print("[!] Data kosong, tidak ada kelas untuk diedit.")
+        input("\nTekan Enter...")
+        return
+        
+    code_to_edit = input_text("Masukkan Kode Kelas yang ingin diedit (misal C01): ").upper()
+    target_class = None
+    for c in classes:
+        if c.code.upper() == code_to_edit:
+            target_class = c
+            break
+            
+    if not target_class:
+        print(f"\n[x] Error: Kelas dengan kode '{code_to_edit}' tidak ditemukan.")
+        input("\nTekan Enter...")
+        return
+
+    print(f"\n--- Mengedit Kelas {target_class.code} ---")
+    print("Tekan Enter langsung jika tidak ingin mengubah nilai tersebut.")
+    
+    nama_baru = input(f"Nama Mata Kuliah [{target_class.nama}]: ").strip()
+    ruangan_baru = input(f"Nama Ruangan [{target_class.ruangan}]: ").strip().upper()
+    
+    while True:
+        jam_mulai_baru = input(f"Jam Mulai (HH:MM) [{target_class.jam_mulai}]: ").strip()
+        jam_selesai_baru = input(f"Jam Selesai (HH:MM) [{target_class.jam_selesai}]: ").strip()
+        
+        m_mulai = target_class.mulai_menit
+        m_selesai = target_class.selesai_menit
+        
+        jam_mulai_temp = jam_mulai_baru if jam_mulai_baru else target_class.jam_mulai
+        jam_selesai_temp = jam_selesai_baru if jam_selesai_baru else target_class.jam_selesai
+        
+        try:
+            m_mulai = parse_time(jam_mulai_temp)
+            m_selesai = parse_time(jam_selesai_temp)
+            if m_mulai >= m_selesai:
+                print("[x] Error: Jam selesai harus setelah jam mulai! Silakan input ulang.")
+                continue
+            break
+        except ValueError as e:
+            print(f"[x] Error: {e}")
+            continue
+            
+    if nama_baru:
+        target_class.nama = nama_baru
+    if ruangan_baru:
+        target_class.ruangan = ruangan_baru
+    if jam_mulai_baru:
+        target_class.jam_mulai = jam_mulai_temp
+        target_class.mulai_menit = m_mulai
+    if jam_selesai_baru:
+        target_class.jam_selesai = jam_selesai_temp
+        target_class.selesai_menit = m_selesai
+        
+    print(f"\n[v] Sukses: Kelas '{target_class.nama}' ({target_class.code}) berhasil diperbarui!")
+    input("\nTekan Enter...")
+
 def export_schedule_cli(classes, accepted, conflicted, optimized_run):
     """Mengekspor laporan hasil optimasi ke file eksternal."""
     print_header("EKSPOR LAPORAN JADWAL")
@@ -301,10 +385,11 @@ def run_cli_main(classes):
         print(" [8] Reset Data ke Data Dummy")
         print(" [9] Hapus/Reset Seluruh Data")
         print(" [10] Edukasi Teori & Kompleksitas Algoritma")
-        print(" [11] Keluar dari CLI")
+        print(" [11] Edit Jadwal")
+        print(" [12] Keluar dari CLI")
         print("-" * 65)
         
-        pilihan = input("Pilih Menu (1-11): ").strip()
+        pilihan = input("Pilih Menu (1-12): ").strip()
         
         if pilihan == '1':
             if not classes:
@@ -336,7 +421,7 @@ def run_cli_main(classes):
                 print("\n[!] Silakan jalankan proses optimasi (Menu 5) terlebih dahulu!")
                 input("\nTekan Enter...")
             else:
-                view_optimization_results_cli(accepted, conflicted)
+                view_optimization_results_cli(classes, accepted, conflicted)
         elif pilihan == '7':
             export_schedule_cli(classes, accepted, conflicted, optimized_run)
         elif pilihan == '8':
@@ -357,9 +442,12 @@ def run_cli_main(classes):
         elif pilihan == '10':
             explain_algorithm_cli()
         elif pilihan == '11':
+            edit_schedule_cli(classes)
+            optimized_run = False
+        elif pilihan == '12':
             print("\nTerima kasih telah menggunakan sistem ini.")
             break
         else:
-            print("\n[x] Pilihan tidak valid! Silakan masukkan angka 1-11.")
+            print("\n[x] Pilihan tidak valid! Silakan masukkan angka 1-12.")
             input("\nTekan Enter...")
 
