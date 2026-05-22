@@ -10,7 +10,8 @@ operasi modifikasi data.
 """
 
 import os
-from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, export_schedule_to_file, get_schedule_suggestions, VALID_ROOMS
+import re
+from engine import Kuliah, parse_time, greedy_schedule, get_dummy_data, export_schedule_to_file, get_schedule_suggestions, VALID_ROOMS, validate_operational_hours, save_to_json, load_from_json
 
 # Urutan hari untuk pengurutan tabel
 DAY_ORDER = {'Senin': 0, 'Selasa': 1, 'Rabu': 2, 'Kamis': 3, 'Jumat': 4, 'Sabtu': 5, 'Minggu': 6}
@@ -510,7 +511,7 @@ def edit_schedule_cli(classes, accepted, conflicted, optimized_run):
     suggestions = get_schedule_suggestions(target_class, classes, accepted_for_sug)
     
     saran_list = []
-    import re
+
     for item in suggestions.get('alt_rooms', []):
         match = re.search(r"Ruang '([^']+)'", item)
         if match:

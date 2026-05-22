@@ -23,6 +23,71 @@ Struktur Data:
 - Dictionary: Digunakan untuk mengelompokkan kelas berdasarkan nama ruangan.
 """
 
+import json
+
+# Rentang jam operasional kampus: 07:00 - 20:00
+OPS_START = 7 * 60   # 420 menit
+OPS_END   = 20 * 60  # 1200 menit
+
+def validate_operational_hours(jam_mulai_menit, jam_selesai_menit):
+    """
+    Validasi apakah jam mulai dan jam selesai berada di dalam jam operasional kampus (07:00 - 20:00).
+    
+    Args:
+        jam_mulai_menit (int): Jam mulai dalam menit sejak tengah malam.
+        jam_selesai_menit (int): Jam selesai dalam menit sejak tengah malam.
+        
+    Raises:
+        ValueError: Jika di luar jam operasional.
+    """
+    if jam_mulai_menit < OPS_START or jam_selesai_menit > OPS_END:
+        raise ValueError(
+            f"Jadwal berada di luar jam operasional kampus (07:00 - 20:00). "
+            f"Waktu yang diajukan: {minutes_to_str(jam_mulai_menit)} - {minutes_to_str(jam_selesai_menit)}"
+        )
+    if jam_mulai_menit >= jam_selesai_menit:
+        raise ValueError("Jam mulai harus lebih awal dari jam selesai.")
+
+
+def save_to_json(filepath, classes):
+    """
+    Menyimpan daftar objek Kuliah ke file JSON.
+    
+    Args:
+        filepath (str): Lokasi file tujuan penyimpanan JSON.
+        classes (list): Daftar objek Kuliah yang ingin disimpan.
+    """
+    data = [c.to_dict() for c in classes]
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
+
+def load_from_json(filepath):
+    """
+    Memuat daftar objek Kuliah dari file JSON.
+    
+    Args:
+        filepath (str): Lokasi file JSON yang ingin dimuat.
+        
+    Returns:
+        list: Daftar objek Kuliah yang berhasil dimuat.
+    """
+    with open(filepath, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    classes = []
+    for item in data:
+        c = Kuliah(
+            code=item['code'],
+            nama=item['nama'],
+            ruangan=item['ruangan'],
+            jam_mulai=item['jam_mulai'],
+            jam_selesai=item['jam_selesai'],
+            hari=item.get('hari', 'Senin')
+        )
+        classes.append(c)
+    return classes
+
+
 def parse_time(time_str):
     """
     Mengonversi string format HH:MM menjadi integer (menit sejak tengah malam).
@@ -324,20 +389,17 @@ def get_schedule_suggestions(target_class, all_classes, accepted_classes):
     )
 
     # Rentang jam operasional kampus: 07:00 - 20:00
-    ops_start = 7 * 60   # 420 menit
-    ops_end   = 20 * 60  # 1200 menit
-
     occupied_slots = [(c.mulai_menit, c.selesai_menit) for c in same_day_room_accepted]
     occupied_slots.sort()
 
     gaps = []
-    prev_end = ops_start
+    prev_end = OPS_START
     for (s, e) in occupied_slots:
         if s > prev_end:
             gaps.append((prev_end, s))
         prev_end = max(prev_end, e)
-    if prev_end < ops_end:
-        gaps.append((prev_end, ops_end))
+    if prev_end < OPS_END:
+        gaps.append((prev_end, OPS_END))
 
     MAX_SUGGESTIONS = 3
     for (gap_start, gap_end) in gaps:
