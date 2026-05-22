@@ -110,18 +110,6 @@ $$T(n) = O(n) + O(n \log n) + O(n) = \mathbf{O(n \log n)}$$
 ### 2. Kompleksitas Ruang:
 - Menyimpan dictionary ruangan dan list hasil optimasi membutuhkan ruang memori tambahan sebesar **$O(n)$**.
 
----
-
-## 💾 Struktur Data yang Digunakan
-
-1. **Kelas Objek (`Class Kuliah`)**:
-   Digunakan untuk membungkus properti dari sebuah kelas (Kode, Nama, Ruangan, Jam Mulai, Jam Selesai). Menyimpan pula konversi waktu ke menit (integer) untuk efisiensi komparasi.
-2. **List (Larik)**:
-   Digunakan untuk menampung seluruh daftar pengajuan kelas, daftar kelas yang diterima, dan daftar kelas yang bentrok.
-3. **Dictionary (Peta/Asosiatif)**:
-   Digunakan untuk memetakan nama ruangan (sebagai key) dengan list objek `Kuliah` yang diajukan pada ruangan tersebut (sebagai value).
-
----
 
 ## 🚀 Petunjuk Pengoperasian Program
 
@@ -147,18 +135,3 @@ python main.py --cli
 ```bash
 python test_scheduler.py
 ```
-
----
-
-## 🧪 Hasil Pengujian (Validasi Program)
-
-Ketika skrip `test_scheduler.py` dijalankan, hasilnya adalah:
-```text
-[...] Menjalankan pengujian algoritma...
-[v] Sukses: Pengujian Berhasil! Algoritma menjamin tidak ada jadwal overlap.
-    - Total Pengajuan: 14 kelas
-    - Berhasil dijadwalkan secara optimal: 9 kelas
-    - Bentrok disaring: 5 kelas
-```
-
-Ini membuktikan bahwa logika greedy yang ditulis berhasil mengeliminasi seluruh overlap jadwal kelas di setiap ruangan dengan sukses dan memberikan hasil yang optimal secara matematis.
